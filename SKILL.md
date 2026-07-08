@@ -69,28 +69,28 @@ For every review, produce:
 
 ## Output Format
 
-Match the user's language. If the user does not request another format, use:
+Match the user's language. If the user does not request another format, use these sections translated to the user's language:
 
 For code-review requests, use findings-first output: list concrete findings with severity and file/line references before summary, context, or recommendations.
 
 ```markdown
-## 판정
+## Verdict
 
-## 근거
+## Evidence
 
-## 주요 위험
+## Key Risks
 
-## 권장 설계
+## Recommended Design
 
-## 권장 설정
+## Recommended Configuration
 
-## 코드/구조 예시
+## Code or Structure Examples
 
-## 테스트 전략
+## Test Strategy
 
-## 운영 지표
+## Operational Signals
 
-## 마이그레이션/롤아웃 절차
+## Migration or Rollout Steps
 
-## 남은 확인사항
+## Open Questions
 ```
