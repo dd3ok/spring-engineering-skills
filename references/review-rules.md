@@ -10,9 +10,11 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 - Security
 - Transactions, Concurrency, and Idempotency
 - Data Access
+- Spring Data JDBC and Relational
 - JPA and Hibernate
 - Kafka and Messaging
 - Redis and Caching
+- Architecture and Modular Boundaries
 - High Traffic and Distributed Systems
 - Observability and Operations
 - gRPC, TLS, and Protocol-Specific Concerns
@@ -22,10 +24,13 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 ## Version and Dependency Management
 
 - Use Spring Boot BOM-managed dependency versions by default.
+- For new applications, prefer Spring Initializr and a minimal starter set over hand-assembling Spring dependencies.
+- Treat auto-configuration as the default, but verify selected starters match the runtime model before approving them.
 - Do not override Spring Framework, Spring Data, Reactor, Kafka, Hibernate, Micrometer, Spring Security, or Spring Cloud versions without verified compatibility evidence.
 - Match the Spring Cloud release train to the Spring Boot minor line. Check the Spring Cloud compatibility table for the exact supported range.
 - Before a major upgrade, first move to the latest patch version of the current major/minor line and remove deprecated APIs and properties.
 - For Spring Boot 4.x migrations, start from the latest 3.5.x line, review the Boot 4 migration guide and release notes, and verify Java 17+, Kotlin 2.2+, GraalVM 25+, Maven/Gradle requirements, Jakarta EE 11, Servlet 6.1, Spring Framework 7.x, Jackson 3, modularized starters/modules, and removed features such as Undertow support.
+- For version and security checks, start with official release highlights, generation compatibility/support pages, and Spring security advisories before relying on blog posts or transitive dependency scanners alone.
 - Treat native-image, AOT, CRaC, and checkpoint/restore guidance as deployment-specific. Do not recommend them unless startup time, memory footprint, packaging, or platform requirements justify the tradeoff.
 
 ## MVC, WebFlux, and Threads
@@ -74,8 +79,19 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 - Use `JdbcClient` or `JdbcTemplate` for SQL-heavy, bulk, reporting, or precise query paths.
 - Use jOOQ when type-safe SQL and schema-driven code generation matter, subject to Java-version and license constraints.
 - Use R2DBC only for reactive database access in a fully reactive path.
+- Keep Spring Data repository interfaces narrow. Use derived queries for simple predicates and explicit `@Query` or custom repository code when intent, performance, or query shape would otherwise be hidden.
+- Enable Spring Data auditing deliberately. Verify who supplies auditor identity, how timestamps are set, and whether audit metadata is part of the domain contract.
 - Use exactly one schema-management mechanism in production, preferably Flyway or Liquibase.
 - Do not rely on Hibernate `ddl-auto` or `import.sql` for production schema evolution.
+
+## Spring Data JDBC and Relational
+
+- Treat Spring Data JDBC as an aggregate-centric repository model, not a lightweight JPA replacement. Verify aggregate roots, ownership, and consistency boundaries explicitly.
+- Expect one repository per aggregate root. Avoid repositories for nested entities that are only reachable through an aggregate root.
+- Account for Spring Data JDBC save semantics: referenced entities in an existing aggregate may be deleted and recreated. Review write amplification, triggers, foreign keys, audit tables, and optimistic-lock behavior before using it on large aggregates.
+- Do not assume JPA behavior such as lazy loading, dirty checking, first-level cache identity semantics, or entity graphs when reviewing Spring Data JDBC.
+- For high-read aggregate paths, check whether Single Query Loading applies, whether its constraints are met, and whether fallback loading creates excessive SQL statements.
+- Use Spring Data Commons repository, mapping, auditing, and entity-state rules as shared assumptions across Spring Data modules, then check module-specific behavior before making performance or consistency claims.
 
 ## JPA and Hibernate
 
@@ -93,6 +109,7 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 - Disable consumer auto-commit for business-critical processing unless the risk is explicitly accepted.
 - Use `read_committed` only when consuming transactional records and when the latency and visibility tradeoff is acceptable.
 - Design retry topics, dead-letter topics, and poison-message handling explicitly.
+- For Spring Kafka non-blocking retries, verify they are not combined with container transactions, and document topic naming, backoff precision, fatal-exception classification, and DLT processing strategy.
 - For database plus Kafka atomicity, prefer transactional outbox or a consciously documented alternative. Require idempotent consumers.
 - Do not claim Kafka exactly-once semantics make external database writes, HTTP calls, emails, or other side effects exactly once.
 - If using Spring Kafka transactions, verify `transaction-id-prefix` uniqueness per application instance, size transactional producer caches for concurrency, and set producer `maxAge` below broker `transactional.id.expiration.ms` when idle producers can expire.
@@ -107,6 +124,12 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 - Do not use Redis distributed locks for correctness-critical mutual exclusion unless fencing tokens or a stronger consensus or transactional mechanism protects the resource.
 - Review cache stampede, hot keys, large values, eviction policy, and memory growth before high-traffic launch.
 - For time-to-idle behavior, verify Redis server command support and consistent access paths.
+
+## Architecture and Modular Boundaries
+
+- For large modular monoliths, check whether package boundaries, domain events, and dependency direction are explicit enough to test. Consider Spring Modulith when module verification, module-level integration tests, generated module documentation, or event publication/outbox support would reduce architecture drift.
+- Do not introduce Spring Modulith just to add framework surface area. Use it when the application already has meaningful domain modules or when module-boundary regression tests are a concrete need.
+- For public REST APIs, prefer test-generated documentation such as Spring REST Docs when API examples, headers, fields, and error contracts must stay synchronized with tests.
 
 ## High Traffic and Distributed Systems
 
@@ -135,6 +158,7 @@ Use these rules for Spring Boot architecture reviews, code reviews, migration re
 ## Testing
 
 - Use slice tests for controller, repository, and service isolation.
+- Prefer Spring's test support, including TestContext, MockMvc, WebTestClient, and Spring Boot test slices, over ad hoc integration harnesses.
 - Use Testcontainers for integration tests with real databases, Redis, Kafka, and dependent infrastructure.
 - Use `@ServiceConnection` when supported to reduce brittle property wiring.
 - Use embedded Kafka carefully. Avoid mixing global embedded brokers with per-test brokers.

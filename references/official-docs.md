@@ -2,12 +2,20 @@
 
 Use this map to start source checks. Prefer the latest official docs for the target version, and switch to versioned docs when reviewing an older application.
 
+## Spring Portfolio
+
+- Projects overview and current versions: https://spring.io/projects
+- Release highlights by Spring Boot version: https://spring.io/projects/release-highlights
+- Spring Boot generation compatibility and support: https://spring.io/projects/generations
+- Spring security advisories: https://spring.io/security
+
 ## Spring Boot
 
 - System requirements: https://docs.spring.io/spring-boot/system-requirements.html
 - Upgrading Spring Boot: https://docs.spring.io/spring-boot/upgrading.html
 - Spring Boot 4.0 migration guide: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide
 - Spring Boot 4.0 release notes: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Release-Notes
+- Spring Boot 4.1 release notes: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Notes
 - Build systems and dependency management: https://docs.spring.io/spring-boot/reference/using/build-systems.html
 - Externalized configuration: https://docs.spring.io/spring-boot/reference/features/external-config.html
 - JSON and Jackson migration: https://docs.spring.io/spring-boot/reference/features/json.html
@@ -17,7 +25,7 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - Reactive web applications: https://docs.spring.io/spring-boot/reference/web/reactive.html
 - Graceful shutdown: https://docs.spring.io/spring-boot/reference/web/graceful-shutdown.html
 - REST clients and HTTP client settings: https://docs.spring.io/spring-boot/reference/io/rest-client.html
-- HTTP client SSRF filter API: https://docs.spring.io/spring-boot/4.1.0/api/java/org/springframework/boot/http/client/InetAddressFilter.html
+- Spring Boot 4.1+ HTTP client SSRF filter API: https://docs.spring.io/spring-boot/4.1.0/api/java/org/springframework/boot/http/client/InetAddressFilter.html
 - SQL databases: https://docs.spring.io/spring-boot/reference/data/sql.html
 - Kafka support: https://docs.spring.io/spring-boot/reference/messaging/kafka.html
 - Caching: https://docs.spring.io/spring-boot/reference/io/caching.html
@@ -33,6 +41,13 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 
 ## Spring Framework
 
+- Spring Framework project page and feature index: https://spring.io/projects/spring-framework
+- Spring Framework 7.0 release notes: https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes
+- Core technologies: https://docs.spring.io/spring-framework/reference/core.html
+- Testing: https://docs.spring.io/spring-framework/reference/testing.html
+- Data access: https://docs.spring.io/spring-framework/reference/data-access.html
+- Servlet web stack: https://docs.spring.io/spring-framework/reference/web.html
+- Reactive web stack: https://docs.spring.io/spring-framework/reference/web-reactive.html
 - Transaction rollback rules: https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/rolling-back.html
 - `@Transactional` usage: https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html
 - Programmatic transactions: https://docs.spring.io/spring-framework/reference/data-access/transaction/programmatic.html
@@ -61,22 +76,49 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 
 ## Data Access
 
+- Spring Data project page and module map: https://spring.io/projects/spring-data
+- Spring Data Commons core concepts: https://docs.spring.io/spring-data/commons/reference/repositories/core-concepts.html
+- Spring Data Commons object mapping fundamentals: https://docs.spring.io/spring-data/commons/reference/object-mapping.html
+- Spring Data Commons auditing: https://docs.spring.io/spring-data/commons/reference/auditing.html
 - Spring Data JPA reference: https://docs.spring.io/spring-data/jpa/reference/index.html
+- Spring Data JPA getting started: https://docs.spring.io/spring-data/jpa/reference/jpa/getting-started.html
+- Spring Data JPA auditing: https://docs.spring.io/spring-data/jpa/reference/auditing.html
 - Spring Data JPA projections: https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 - Spring Data JPA query methods and entity graphs: https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html
+- Spring Data JDBC project page: https://spring.io/projects/spring-data-jdbc
+- Spring Data Relational reference: https://docs.spring.io/spring-data/relational/reference/index.html
+- Spring Data JDBC reference: https://docs.spring.io/spring-data/relational/reference/jdbc.html
+- Spring Data JDBC domain-driven design: https://docs.spring.io/spring-data/relational/reference/jdbc/domain-driven-design.html
+- Spring Data JDBC entity persistence: https://docs.spring.io/spring-data/relational/reference/jdbc/entity-persistence.html
+- Spring Data JDBC mapping: https://docs.spring.io/spring-data/relational/reference/jdbc/mapping.html
+- Spring Data JDBC query methods: https://docs.spring.io/spring-data/relational/reference/jdbc/query-methods.html
+- Spring Data JDBC transactionality: https://docs.spring.io/spring-data/relational/reference/jdbc/transactions.html
+- Spring Data R2DBC project page: https://spring.io/projects/spring-data-r2dbc
 - Hibernate ORM user guide: https://docs.hibernate.org/orm/current/userguide/html_single/
 - jOOQ manual: https://www.jooq.org/doc/latest/manual/
 
 ## Messaging, Reactor, and Redis
 
+- Spring for Apache Kafka project page and compatibility matrix: https://spring.io/projects/spring-kafka
 - Spring Kafka transactions: https://docs.spring.io/spring-kafka/reference/kafka/transactions.html
+- Spring Kafka exactly-once semantics: https://docs.spring.io/spring-kafka/reference/kafka/exactly-once.html
+- Spring Kafka exception handling: https://docs.spring.io/spring-kafka/reference/kafka/annotation-error-handling.html
+- Spring Kafka non-blocking retries and DLT: https://docs.spring.io/spring-kafka/reference/retrytopic.html
 - Spring Kafka filtering and idempotent receiver pattern: https://docs.spring.io/spring-kafka/reference/kafka/receiving-messages/filtering.html
+- Spring Kafka tips and examples: https://docs.spring.io/spring-kafka/reference/tips.html
 - Reactor schedulers: https://projectreactor.io/docs/core/release/reference/coreFeatures/schedulers.html
 - Spring Data Redis drivers and connection thread-safety: https://docs.spring.io/spring-data/redis/reference/redis/drivers.html
 - Spring Data Redis cache TTL/TTI: https://docs.spring.io/spring-data/redis/reference/redis/redis-cache.html
 - Spring Data Redis template and serialization: https://docs.spring.io/spring-data/redis/reference/redis/template.html
 - Redis distributed locks: https://redis.io/docs/latest/develop/clients/patterns/distributed-locks/
 - Redis stampede/thundering herd guidance: https://redis.io/blog/how-to-tame-the-thundering-herd-problem/
+
+## Architecture, Modules, and API Documentation
+
+- Spring Modulith project page: https://spring.io/projects/spring-modulith
+- Spring Modulith reference: https://docs.spring.io/spring-modulith/reference/index.html
+- Spring REST Docs project page: https://spring.io/projects/spring-restdocs
+- Spring REST Docs reference: https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/
 
 ## Distributed Systems Background
 
@@ -92,3 +134,5 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - For Kafka plus database atomicity, check Spring Kafka transactions and idempotent receiver docs, then review outbox alternatives.
 - For Redis locks, check both Redis official docs and the fencing-token critique before making correctness claims.
 - For security reviews, check Spring Security authorization, CSRF, OAuth2 resource server, and method-security docs.
+- For Spring Data JDBC reviews, check aggregate boundaries, entity persistence semantics, and Single Query Loading constraints before treating it like JPA.
+- For modular monolith reviews, check Spring Modulith only when module boundaries, event publication, module testing, or generated module documentation matter.

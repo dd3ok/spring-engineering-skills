@@ -1,6 +1,6 @@
 ---
 name: spring-boot-best-practice-skill
-description: 'Manual Spring Boot architecture review mode. Invoke only with explicit trigger tokens: "$spring-boot-best-practice-skill", "/spring-boot-best-practice-skill", or "spring bp". Do not use for ordinary Spring Boot questions.'
+description: 'Explicit-only Spring Boot review mode for architecture, code, dependency, migration, and production-readiness reviews. Invoke only with "$spring-boot-best-practice-skill", "/spring-boot-best-practice-skill", or "spring bp". Do not use for ordinary Spring Boot questions.'
 ---
 
 # Spring Boot Best Practice Skill
