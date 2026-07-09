@@ -5,6 +5,7 @@ import re
 from build_claude_package import ROOT, build_skill_md, ensure_simple_frontmatter
 
 PACKAGE = ROOT / "dist" / "claude"
+MAX_PORTABLE_DESCRIPTION_CHARS = 1024
 
 
 def parse_frontmatter(text: str) -> dict[str, str]:
@@ -24,6 +25,11 @@ def parse_frontmatter(text: str) -> dict[str, str]:
             continue
         key, value = line.split(":", 1)
         result[key.strip()] = value.strip().strip("'\"")
+    description = result.get("description", "")
+    if len(description) > MAX_PORTABLE_DESCRIPTION_CHARS:
+        raise SystemExit(
+            f"description must stay under {MAX_PORTABLE_DESCRIPTION_CHARS} characters for portable skill metadata"
+        )
     return result
 
 

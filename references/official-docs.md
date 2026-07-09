@@ -35,6 +35,7 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - Spring Boot 4.0 release notes: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Release-Notes
 - Spring Boot 4.1 release notes: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Notes
 - Build systems and dependency management: https://docs.spring.io/spring-boot/reference/using/build-systems.html
+- Kotlin support: https://docs.spring.io/spring-boot/reference/features/kotlin.html
 - Externalized configuration: https://docs.spring.io/spring-boot/reference/features/external-config.html
 - Profiles: https://docs.spring.io/spring-boot/reference/features/profiles.html
 - JSON and Jackson migration: https://docs.spring.io/spring-boot/reference/features/json.html

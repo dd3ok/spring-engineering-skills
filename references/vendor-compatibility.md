@@ -7,7 +7,7 @@ Use this file only when maintaining or packaging the skill itself. Do not load i
 - Keep the shared `SKILL.md` as the portable source of truth.
 - Keep YAML frontmatter minimal: `name` and `description` only unless all target vendors accept the field.
 - Keep detailed review rules in `references/` and route to them from `SKILL.md`.
-- Keep activation tokens in frontmatter `description`; keep vendor-specific loader behavior in `Activation Policy` and this file.
+- Keep documented loader triggers in frontmatter `description`; keep body-only local aliases such as `spring bp` in `Activation Policy` and vendor notes.
 - Do not add vendor-specific control fields to the shared `SKILL.md` if they fail another vendor's validator.
 - Do not check generated vendor packages into the portable source package. Generate them as release artifacts from the shared source.
 - Keep `SKILL.md` under 500 lines and keep references one level deep from `SKILL.md`.
