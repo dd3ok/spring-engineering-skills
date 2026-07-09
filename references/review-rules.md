@@ -16,6 +16,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - JPA and Hibernate
 - Kafka and Messaging
 - Redis and Caching
+- Scheduling and Async Work
 - Architecture and Modular Boundaries
 - High Traffic and Distributed Systems
 - Observability and Operations
@@ -63,6 +64,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 ## API and HTTP Clients
 
+- Load `references/http-client-rules.md` when outbound HTTP correctness, deadlines, retries, SSRF, client pools, declarative clients, or service-to-service reliability are central to the request.
 - Prefer explicit API versioning through path, header, query parameter, or media type strategies.
 - Prefer RFC 9457 Problem Details for API error responses.
 - Avoid suffix-pattern content negotiation.
@@ -147,7 +149,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 ## Redis and Caching
 
-- Load `redis-rules.md` when Redis is central to cache design, session storage, locks, rate limiting, streams, pub/sub, or topology.
+- Load `references/redis-rules.md` when Redis is central to cache design, session storage, locks, rate limiting, streams, pub/sub, or topology.
 - Use Redis cache for shared, short-lived, invalidatable data. Use local Caffeine for hot per-instance cache when appropriate.
 - Specify TTLs, key prefixes, serializers, and cache-null behavior deliberately.
 - Do not accept Redis cache defaults blindly: default cache entries have no expiration, values use JDK serialization, and cache clearing can use `KEYS` unless configured otherwise.
@@ -157,6 +159,11 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Review cache stampede, hot keys, large values, eviction policy, and memory growth before high-traffic launch.
 - For time-to-idle behavior, verify Redis server command support and consistent access paths.
 - If Redis is more than a cache-aside store, verify topology and failover explicitly: standalone plus Sentinel, Cluster, managed service behavior, persistence, eviction policy, connection pooling or multiplexing, and client retry behavior.
+
+## Scheduling and Async Work
+
+- Load `references/scheduling-rules.md` when `@Scheduled`, Quartz, task execution, async executors, overlapping runs, virtual-thread schedulers, or distributed scheduling are central to the request.
+- In baseline review, flag scheduled work without overlap control, idempotency, timeout, retry/backoff, cancellation, observability, and multi-instance behavior.
 
 ## Architecture and Modular Boundaries
 

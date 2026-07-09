@@ -1,6 +1,6 @@
 ---
 name: spring-best-practice-skill
-description: 'Use only when the user explicitly invokes "$spring-best-practice-skill", selects it from /skills, or uses a validated "spring bp" alias. Reviews Spring and Spring Boot architecture, code, dependencies, migrations, production readiness, security, Redis/cache, scheduling, data, messaging, batch, AI, and API design. Do not use for ordinary Spring questions.'
+description: 'Use only when the user explicitly invokes "$spring-best-practice-skill", selects it from /skills, or uses a runtime-specific direct skill invocation. Reviews Spring and Spring Boot architecture, code, dependencies, migrations, production readiness, security, Redis/cache, scheduling, data, messaging, batch, AI, and API design. Do not use for ordinary Spring questions.'
 ---
 
 # Spring Best Practice Skill
@@ -15,7 +15,7 @@ Apply this skill only after explicit current-runtime invocation. Accepted activa
 - `/spring-best-practice-skill`
 - `spring bp`
 
-Loader behavior is vendor-specific. Codex/OpenAI guarantees `$spring-best-practice-skill` or `/skills` selection. Claude Code maps `/spring-best-practice-skill` to the skill directory name. Treat `spring bp` as portable only after runtime validation.
+Loader behavior is vendor-specific. Codex/OpenAI documents `$spring-best-practice-skill` or `/skills` selection. Claude Code maps `/spring-best-practice-skill` to the skill directory name. Treat `spring bp` as portable only after runtime validation.
 
 If this skill is loaded implicitly for any other Spring or Spring Boot request, do not apply the specialized review workflow. Briefly tell the user this skill is explicit-triggered and that they can use a supported activation path if they want this review mode.
 
@@ -28,6 +28,8 @@ For any Spring or Spring Boot review, load `references/review-rules.md` as the b
 | Request area | Load |
 | --- | --- |
 | Core Spring/Spring Boot architecture, code, dependencies, migration, production readiness | `references/review-rules.md` |
+| Version-specific migrations or major upgrades involving Spring Boot, Spring Framework, Spring Security, Spring Data, Spring Cloud, Java, Kotlin, Jakarta, dependency constraints, build tooling, or runtime behavior | `references/migration-rules.md` |
+| HTTP clients, RestClient, WebClient, HTTP Service Clients, Feign, Reactor Netty, SSRF, deadlines, service-to-service reliability | `references/http-client-rules.md` |
 | Spring AI, LLM, RAG, ChatClient, vector stores, tool calling, MCP, model evaluation | `references/spring-ai-rules.md` |
 | Spring Batch jobs, chunk processing, scheduled/bulk work, restartability, partitioning | `references/spring-batch-rules.md` |
 | Redis, Spring Data Redis, cache/session design, distributed locks, Redis streams/pubsub, Redis topology | `references/redis-rules.md` |
@@ -40,7 +42,7 @@ For any Spring or Spring Boot review, load `references/review-rules.md` as the b
 
 Do not load every reference automatically if the user asks a narrow question.
 
-Use dependency ids as routing hints: `spring-ai-*`, `batch*`, `quartz`, `task`, `scheduling`, `data-redis`, `session-data-redis`, `lettuce`, `jedis`, `integration-redis`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `spring-cloud-starter-gateway*`, `gateway`, `websocket`, `rsocket`, `graphql`, `oauth2-authorization-server`, `session-*`, `jooq`, `spring-cloud-starter-config`, `cloud-starter-vault-config`, `config-server`, `vault`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
+Use dependency ids as routing hints: `spring-ai-*`, `spring-boot-starter-batch`, `spring-batch-*`, `batch*`, `quartz`, `task`, `scheduling`, `data-redis`, `session-data-redis`, `redis`, `cache`, `lettuce`, `jedis`, `integration-redis`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `spring-cloud-starter-gateway*`, `gateway`, `websocket`, `rsocket`, `graphql`, `oauth2-authorization-server`, `session-*`, `restclient`, `webclient`, `http-client`, `http-service`, `openfeign`, `jooq`, `spring-cloud-starter-config`, `cloud-starter-vault-config`, `config-server`, `vault`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
 
 ## Review Setup
 
@@ -70,6 +72,8 @@ Verify recent or version-specific claims against official sources before making 
 Match the user's language. If the user does not request another format, use this compact shape translated to the user's language:
 
 For code-review, architecture-review, migration-review, or claim-review requests, use findings-first output: list concrete findings with severity before summary, context, or recommendations. Include file/line references when code is provided; otherwise cite the affected component, configuration, dependency, or official source.
+
+For explicitly invoked explanatory questions that are not review, design, migration, or claim-review tasks, answer normally while preserving the source policy and conservative Spring assumptions.
 
 ```markdown
 ## Findings

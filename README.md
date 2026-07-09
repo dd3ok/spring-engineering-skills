@@ -2,15 +2,17 @@
 
 Explicitly triggered Agent Skill for Spring and Spring Boot review work. It focuses on architecture, production readiness, security, data access, messaging, batch, AI, API design, migration risk, and operational tradeoffs.
 
-This repository is the distribution package. Runtime instructions live in `SKILL.md`; heavier domain rules live in `references/` and are loaded only when the request needs them.
+This repository is the portable source package. Runtime instructions live in `SKILL.md`; heavier domain rules live in `references/` and are loaded only when the request needs them. Vendor-specific package outputs are generated from this source.
 
 ## Activation
 
-Use one of these explicit activation paths:
+Documented loader triggers differ by runtime:
 
-- `$spring-best-practice-skill`
-- `/spring-best-practice-skill`
-- `spring bp`, after the target runtime has been validated to route that alias
+- Codex/OpenAI: `$spring-best-practice-skill` or selecting the skill from `/skills`.
+- Claude Code: `/spring-best-practice-skill` when installed under the expected skill directory.
+- Antigravity: validate trigger behavior in the specific runtime; prefer project-scoped `.agents/skills/spring-best-practice-skill/`.
+
+After the skill has loaded, `spring bp` may be treated as a local alias only when the target runtime has been validated. Do not document it as a portable loader trigger.
 
 Do not rely on ordinary Spring wording to trigger the skill. The package is intentionally explicit-first.
 
@@ -20,21 +22,21 @@ Codex/OpenAI:
 
 - Uses the portable `SKILL.md` with `name` and `description` frontmatter.
 - Includes `agents/openai.yaml` with `policy.allow_implicit_invocation: false`, so Codex does not select the skill implicitly from general Spring prompts.
-- Guaranteed explicit path is `$spring-best-practice-skill` or selecting it from `/skills`.
+- Documented explicit path is `$spring-best-practice-skill` or selecting it from `/skills`.
 - Repo-scoped install path is `.agents/skills/spring-best-practice-skill/`; user-scoped install path is `$HOME/.agents/skills/spring-best-practice-skill/`.
 
 Claude Code:
 
 - Direct invocation is based on the skill directory name, so the expected command is `/spring-best-practice-skill`.
 - The shared `SKILL.md` intentionally does not include Claude-only `disable-model-invocation: true`.
-- If a Claude-only package must block all model-triggered invocation, create a Claude-specific copy with `disable-model-invocation: true`.
+- If a Claude-only package must block all model-triggered invocation, run `python scripts/build_claude_package.py` and publish the generated `dist/claude/` artifact.
 - Install as `~/.claude/skills/spring-best-practice-skill/`, `.claude/skills/spring-best-practice-skill/`, or as part of a Claude plugin.
 
 Antigravity:
 
 - Uses the same open Agent Skills layout: a folder containing `SKILL.md` plus optional supporting files.
 - Preferred project/workspace install path is `<project-root>/.agents/skills/spring-best-practice-skill/`.
-- Official Google codelabs describe global product scope at `~/.gemini/config/skills/`. They also note that Antigravity may see `~/.agents/skills/`, while Antigravity CLI may require copying global skills to `~/.gemini/antigravity-cli/skills/`.
+- Official Google codelabs describe global product scope at `~/.gemini/config/skills/`; CLI examples also discover project skills from `.agents/skills/`.
 - Keep the description narrow and validate trigger behavior in the specific Antigravity runtime before relying on aliases.
 
 See `references/vendor-compatibility.md` for maintenance notes.
@@ -46,9 +48,14 @@ spring-best-practice-skill/
 |-- SKILL.md
 |-- agents/
 |   `-- openai.yaml
+|-- scripts/
+|   |-- build_claude_package.py
+|   `-- validate_claude_package.py
 `-- references/
     |-- api-protocol-rules.md
     |-- data-access-rules.md
+    |-- http-client-rules.md
+    |-- migration-rules.md
     |-- messaging-rules.md
     |-- official-docs.md
     |-- redis-rules.md
@@ -58,6 +65,8 @@ spring-best-practice-skill/
     |-- spring-batch-rules.md
     `-- vendor-compatibility.md
 ```
+
+`dist/claude/` is generated release output, not part of the portable source layout.
 
 ## Scope
 
@@ -72,6 +81,8 @@ Focused references add deeper routing for:
 - Messaging with Kafka-adjacent Spring patterns, RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, and JMS.
 - API/protocol concerns such as GraphQL, gRPC, Gateway, WebSocket/RSocket, Authorization Server, Session, HATEOAS, SOAP/Web Services, and LDAP.
 - Data-access strategy beyond core JPA/JDBC/R2DBC, including jOOQ, NoSQL, and Spring Data REST.
+- HTTP client, service-to-service reliability, deadline, retry, pool, and SSRF reviews.
+- Major Spring, Java, Kotlin, dependency, Jakarta, build, and runtime migrations.
 
 ## Validation
 
@@ -81,11 +92,39 @@ Run the structural validator from the Codex skill creator:
 python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
 ```
 
+Expected: `Skill is valid!`
+
 Suggested maintenance checks:
 
 ```powershell
 git diff --check
 ```
+
+Build and validate the Claude manual-only package when preparing a Claude release artifact. Do not run the Codex `quick_validate.py` against `dist/claude`; that generated package intentionally contains Claude-only `disable-model-invocation: true` frontmatter.
+
+```powershell
+python scripts/build_claude_package.py
+python scripts/validate_claude_package.py
+```
+
+Expected: `Claude package is valid!`
+
+Routing smoke tests before release:
+
+- Codex/OpenAI should trigger: `$spring-best-practice-skill review this Spring Boot service for production readiness`
+- Codex/OpenAI should trigger: selecting the skill from `/skills`, then asking for a Spring Boot production-readiness review.
+- Claude Code should trigger: `/spring-best-practice-skill review Redis cache and lock design`
+- `spring bp` should be accepted only after runtime alias validation.
+- Ordinary Spring prompts such as `Explain @Transactional in Spring` or `How do I create a Spring Boot controller?` should not trigger/load the skill; if a runtime loads it anyway, the skill should decline the specialized workflow.
+- Spring AI, RAG, ChatClient, tool calling, or vector store requests should route to `references/spring-ai-rules.md`.
+- jOOQ, NoSQL, Spring Data REST, or broad data-access strategy requests should route to `references/data-access-rules.md`.
+- GraphQL, gRPC, Gateway, WebSocket/RSocket, Authorization Server, Session, HATEOAS, SOAP, or LDAP requests should route to `references/api-protocol-rules.md`.
+- RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, JMS, or complex message-flow requests should route to `references/messaging-rules.md`.
+- Redis cache/session/lock/topology request should route to `references/redis-rules.md`.
+- Scheduled job, Quartz, overlap, async executor, or virtual-thread scheduler requests should route to `references/scheduling-rules.md`.
+- Batch restartability request should route to `references/spring-batch-rules.md`.
+- HTTP client timeout/SSRF request should route to `references/http-client-rules.md`.
+- Major version upgrade request should route to `references/migration-rules.md`.
 
 Before release, also search for stale trigger aliases and vendor-only fields so the shared `SKILL.md` stays portable.
 

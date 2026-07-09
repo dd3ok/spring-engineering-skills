@@ -1,0 +1,3 @@
+# Generated vendor release packages.
+dist/
+__pycache__/
