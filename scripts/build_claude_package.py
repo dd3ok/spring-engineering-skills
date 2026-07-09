@@ -9,6 +9,10 @@ OUT = ROOT / "dist" / "claude"
 MULTILINE_YAML_MARKERS = {"|", "|-", "|+", ">", ">-", ">+"}
 
 
+def frontmatter_key(line: str) -> str:
+    return line.split(":", 1)[0].strip()
+
+
 def ensure_simple_frontmatter(frontmatter: list[str], source_name: str) -> None:
     for line in frontmatter:
         stripped = line.strip()
@@ -46,10 +50,11 @@ def build_skill_md() -> str:
     rendered: list[str] = []
     inserted = False
     for line in frontmatter:
-        if line.startswith("disable-model-invocation:"):
+        key = frontmatter_key(line)
+        if key == "disable-model-invocation":
             continue
         rendered.append(line)
-        if line.startswith("description:") and not inserted:
+        if key == "description" and not inserted:
             rendered.append("disable-model-invocation: true")
             inserted = True
 
