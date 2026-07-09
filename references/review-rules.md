@@ -89,7 +89,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Validate request DTOs, message payloads, and command objects at the boundary. For service method validation, verify type-level `@Validated` is present where inline method constraints are expected.
 - Validate `@ConfigurationProperties` so missing endpoints, credentials, pool sizes, limits, and feature flags fail at startup instead of failing under traffic.
 - Review JSON/XML serialization boundaries: unknown fields, enum evolution, date/time formats, numeric precision, polymorphic deserialization, backward compatibility, and PII in logs or traces.
-- For email, SMS, webhooks, push notifications, and other external side effects, require explicit timeouts, retry budgets, idempotency or duplicate suppression, auditability, and outbox-style recovery when side effects are coupled to database changes.
+- For email, SMS, webhooks, push notifications, file writes, and other external side effects, require explicit timeouts, retry budgets, idempotency or duplicate suppression, auditability, and outbox-style recovery when side effects are coupled to database changes.
 - Use JTA/XA only when all enlisted resources, transaction managers, recovery logs, and operational procedures are explicitly supported. Prefer outbox, idempotent consumers, or compensation for service-to-service consistency.
 
 ## Transactions, Concurrency, and Idempotency

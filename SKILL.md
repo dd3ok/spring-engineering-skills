@@ -40,7 +40,7 @@ For any Spring or Spring Boot review, load `references/review-rules.md` as the b
 
 Do not load every reference automatically if the user asks a narrow question.
 
-Use dependency ids as routing hints: `spring-ai-*`, `batch*`, `quartz`, `task`, `scheduling`, `data-redis`, `session-data-redis`, `lettuce`, `jedis`, `integration-redis`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `spring-cloud-starter-gateway*`, `gateway`, `websocket`, `rsocket`, `graphql`, `oauth2-authorization-server`, `session-*`, `jooq`, `cloud-starter-vault-config`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
+Use dependency ids as routing hints: `spring-ai-*`, `batch*`, `quartz`, `task`, `scheduling`, `data-redis`, `session-data-redis`, `lettuce`, `jedis`, `integration-redis`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `spring-cloud-starter-gateway*`, `gateway`, `websocket`, `rsocket`, `graphql`, `oauth2-authorization-server`, `session-*`, `jooq`, `spring-cloud-starter-config`, `cloud-starter-vault-config`, `config-server`, `vault`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
 
 ## Review Setup
 
