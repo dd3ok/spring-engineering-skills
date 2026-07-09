@@ -1,7 +1,7 @@
 interface:
-  display_name: "Spring Boot Best Practice"
-  short_description: "Review Spring Boot production readiness"
-  default_prompt: "Use $spring-boot-best-practice-skill to review this Spring Boot service for architecture, operability, and production risks."
+  display_name: "Spring Best Practice"
+  short_description: "Review Spring production readiness"
+  default_prompt: "Use $spring-best-practice-skill to review this Spring service for architecture, operability, and production risks."
 
 policy:
   allow_implicit_invocation: false
