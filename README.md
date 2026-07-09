@@ -51,7 +51,9 @@ spring-best-practice-skill/
     |-- data-access-rules.md
     |-- messaging-rules.md
     |-- official-docs.md
+    |-- redis-rules.md
     |-- review-rules.md
+    |-- scheduling-rules.md
     |-- spring-ai-rules.md
     |-- spring-batch-rules.md
     `-- vendor-compatibility.md
@@ -59,14 +61,16 @@ spring-best-practice-skill/
 
 ## Scope
 
-The baseline review rules cover core Spring and Spring Boot work: configuration, dependency boundaries, HTTP clients and timeouts, security, observability, transactions, Redis/Kafka usage, virtual threads, migrations, and production rollout risks.
+The baseline review rules cover core Spring and Spring Boot work: configuration, dependency boundaries, HTTP clients and timeouts, security, validation, serialization, observability, transactions, Redis/Kafka usage, scheduling, virtual threads, migrations, and production rollout risks.
 
 Focused references add deeper routing for:
 
 - Spring AI, LLM/RAG, vector stores, tool calling, MCP, and evaluations.
 - Spring Batch jobs, chunk processing, restartability, partitioning, and scheduling.
+- Redis cache/session/lock design, streams/pubsub, topology, Sentinel/Cluster, and client behavior.
+- `@Scheduled`, TaskScheduler/TaskExecutor, Quartz, cron, overlap prevention, and distributed job coordination.
 - Messaging with Kafka-adjacent Spring patterns, RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, and JMS.
-- API/protocol concerns such as GraphQL, gRPC, Authorization Server, Session, HATEOAS, SOAP/Web Services, and LDAP.
+- API/protocol concerns such as GraphQL, gRPC, Gateway, WebSocket/RSocket, Authorization Server, Session, HATEOAS, SOAP/Web Services, and LDAP.
 - Data-access strategy beyond core JPA/JDBC/R2DBC, including jOOQ, NoSQL, and Spring Data REST.
 
 ## Validation

@@ -12,6 +12,7 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - Spring Batch
 - Spring Security
 - Data Access
+- Scheduling, Coordination, and External Side Effects
 - Messaging, Integration, Reactor, and Redis
 - Architecture, Modules, and API Documentation
 - Background References
@@ -49,6 +50,8 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - SQL databases: https://docs.spring.io/spring-boot/reference/data/sql.html
 - Kafka support: https://docs.spring.io/spring-boot/reference/messaging/kafka.html
 - Caching: https://docs.spring.io/spring-boot/reference/io/caching.html
+- RSocket: https://docs.spring.io/spring-boot/reference/messaging/rsocket.html
+- WebSockets: https://docs.spring.io/spring-boot/reference/messaging/websockets.html
 - gRPC: https://docs.spring.io/spring-boot/reference/io/grpc.html
 - SSL bundles: https://docs.spring.io/spring-boot/reference/features/ssl.html
 - Testcontainers: https://docs.spring.io/spring-boot/reference/testing/testcontainers.html
@@ -162,6 +165,13 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - Spring Data Neo4j reference: https://docs.spring.io/spring-data/neo4j/reference/
 - Spring Data REST reference: https://docs.spring.io/spring-data/rest/reference/
 
+## Scheduling, Coordination, and External Side Effects
+
+- Spring Framework task execution and scheduling: https://docs.spring.io/spring-framework/reference/integration/scheduling.html
+- Spring Boot Quartz Scheduler: https://docs.spring.io/spring-boot/reference/io/quartz.html
+- Spring Boot sending email: https://docs.spring.io/spring-boot/reference/io/email.html
+- Spring Boot distributed transactions with JTA: https://docs.spring.io/spring-boot/reference/io/jta.html
+
 ## Messaging, Integration, Reactor, and Redis
 
 - Spring for Apache Kafka project page and compatibility matrix: https://spring.io/projects/spring-kafka/
@@ -181,6 +191,7 @@ Use this map to start source checks. Prefer the latest official docs for the tar
 - Spring Integration project page: https://spring.io/projects/spring-integration/
 - Spring Integration reference: https://docs.spring.io/spring-integration/reference/
 - Spring Cloud Stream reference: https://docs.spring.io/spring-cloud-stream/reference/
+- Spring Integration Redis support: https://docs.spring.io/spring-integration/reference/redis.html
 - Reactor backpressure overview: https://projectreactor.io/docs/core/release/reference/reactiveProgramming.html
 - Reactor context propagation: https://projectreactor.io/docs/core/release/reference/advanced-contextPropagation.html
 - Reactor schedulers: https://projectreactor.io/docs/core/release/reference/coreFeatures/schedulers.html

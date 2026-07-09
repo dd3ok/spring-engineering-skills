@@ -5,9 +5,11 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 ## Contents
 
 - Version and Dependency Management
+- Configuration, Secrets, and Runtime State
 - MVC, WebFlux, and Threads
 - API and HTTP Clients
 - Security
+- Validation, Serialization, and External Side Effects
 - Transactions, Concurrency, and Idempotency
 - Data Access
 - Spring Data JDBC and Relational
@@ -40,6 +42,13 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - For version and security checks, start with official release highlights, generation compatibility/support pages, and Spring security advisories before relying on blog posts or transitive dependency scanners alone.
 - Treat native-image, AOT, CRaC, and checkpoint/restore guidance as deployment-specific. Do not recommend them unless startup time, memory footprint, packaging, or platform requirements justify the tradeoff.
 - Treat externalized configuration as production behavior. Review property-source precedence, profile activation/groups, `spring.config.import`, config trees for mounted secrets, and fail-fast `@ConfigurationProperties` validation.
+
+## Configuration, Secrets, and Runtime State
+
+- Treat configuration as part of the release contract: review property-source precedence, profile groups, config imports, config-tree mounts, placeholders, and fail-fast validation.
+- For Spring Cloud Config, review backend choice, label/version strategy, profile merge order, access controls, encryption keys, key rotation, health checks, refresh boundaries, and failure behavior when the config server is unavailable.
+- For Vault or secret managers, review authentication method, token/lease renewal, secret rotation, revocation, fail-fast behavior, TLS, audit logs, and whether dynamic credentials outlive connection pools.
+- Secure actuator `env` and `configprops` exposure and avoid logging secrets through startup reports, error messages, traces, or debug dumps.
 
 ## MVC, WebFlux, and Threads
 
@@ -74,6 +83,14 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Keep CSRF enabled for browser/session-backed state-changing flows. Disable it only for stateless APIs or protocols where it is incompatible, and document why.
 - For OAuth2 resource servers, verify issuer/JWKS/introspection configuration, token audience/issuer validation, clock skew handling, and multi-tenant token validation if applicable.
 - Avoid leaking authorization failure details in API responses. Prefer logs, audit events, and correlation IDs for diagnosis.
+
+## Validation, Serialization, and External Side Effects
+
+- Validate request DTOs, message payloads, and command objects at the boundary. For service method validation, verify type-level `@Validated` is present where inline method constraints are expected.
+- Validate `@ConfigurationProperties` so missing endpoints, credentials, pool sizes, limits, and feature flags fail at startup instead of failing under traffic.
+- Review JSON/XML serialization boundaries: unknown fields, enum evolution, date/time formats, numeric precision, polymorphic deserialization, backward compatibility, and PII in logs or traces.
+- For email, SMS, webhooks, push notifications, and other external side effects, require explicit timeouts, retry budgets, idempotency or duplicate suppression, auditability, and outbox-style recovery when side effects are coupled to database changes.
+- Use JTA/XA only when all enlisted resources, transaction managers, recovery logs, and operational procedures are explicitly supported. Prefer outbox, idempotent consumers, or compensation for service-to-service consistency.
 
 ## Transactions, Concurrency, and Idempotency
 
@@ -130,6 +147,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 ## Redis and Caching
 
+- Load `redis-rules.md` when Redis is central to cache design, session storage, locks, rate limiting, streams, pub/sub, or topology.
 - Use Redis cache for shared, short-lived, invalidatable data. Use local Caffeine for hot per-instance cache when appropriate.
 - Specify TTLs, key prefixes, serializers, and cache-null behavior deliberately.
 - Do not accept Redis cache defaults blindly: default cache entries have no expiration, values use JDK serialization, and cache clearing can use `KEYS` unless configured otherwise.
@@ -179,7 +197,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Use Testcontainers for integration tests with real databases, Redis, Kafka, and dependent infrastructure.
 - Use `@ServiceConnection` when supported to reduce brittle property wiring.
 - Use embedded Kafka carefully. Avoid mixing global embedded brokers with per-test brokers.
-- Include failure-mode tests for duplicate requests, retry after timeout, broker outage, database deadlock, lock timeout, cache miss, stale cache, consumer replay, authorization denial, and graceful shutdown.
+- Include failure-mode tests for duplicate requests, retry after timeout, broker outage, database deadlock, lock timeout, cache miss, stale cache, scheduler overlap, expired lock release, consumer replay, authorization denial, and graceful shutdown.
 
 ## Immediate Anti-Patterns
 
@@ -188,7 +206,9 @@ Flag these immediately:
 - WebFlux with JPA or JDBC used as if the whole stack were non-blocking.
 - Kafka exactly-once claims while writing to an external database or API without idempotency or a transactionally coordinated sink.
 - Redis lock used as a correctness boundary without fencing.
+- Horizontally scaled `@Scheduled` work with no stated overlap, partitioning, or single-run policy.
 - Broad `@Transactional` methods that include HTTP calls, Kafka sends, or slow I/O.
+- Email, webhook, payment, or file side effects emitted inside database transactions without idempotency or recovery design.
 - Unbounded retries or retries without jitter.
 - Missing timeout settings for HTTP, database, Redis, Kafka, or gRPC clients.
 - Spring Projects in the Attic proposed for a new design without a migration or compatibility reason.

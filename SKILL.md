@@ -1,6 +1,6 @@
 ---
 name: spring-best-practice-skill
-description: 'Use only when the user explicitly invokes "$spring-best-practice-skill", selects it from /skills, or uses a validated "spring bp" alias. Reviews Spring and Spring Boot architecture, code, dependencies, migrations, production readiness, security, data, messaging, batch, AI, and API design. Do not use for ordinary Spring questions.'
+description: 'Use only when the user explicitly invokes "$spring-best-practice-skill", selects it from /skills, or uses a validated "spring bp" alias. Reviews Spring and Spring Boot architecture, code, dependencies, migrations, production readiness, security, Redis/cache, scheduling, data, messaging, batch, AI, and API design. Do not use for ordinary Spring questions.'
 ---
 
 # Spring Best Practice Skill
@@ -30,15 +30,17 @@ For any Spring or Spring Boot review, load `references/review-rules.md` as the b
 | Core Spring/Spring Boot architecture, code, dependencies, migration, production readiness | `references/review-rules.md` |
 | Spring AI, LLM, RAG, ChatClient, vector stores, tool calling, MCP, model evaluation | `references/spring-ai-rules.md` |
 | Spring Batch jobs, chunk processing, scheduled/bulk work, restartability, partitioning | `references/spring-batch-rules.md` |
+| Redis, Spring Data Redis, cache/session design, distributed locks, Redis streams/pubsub, Redis topology | `references/redis-rules.md` |
+| `@Scheduled`, TaskScheduler/TaskExecutor, Quartz, cron, overlap prevention, distributed job coordination | `references/scheduling-rules.md` |
 | RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, JMS, complex message flow | `references/messaging-rules.md` |
-| GraphQL, gRPC, Authorization Server, Session, HATEOAS, SOAP/Web Services, LDAP | `references/api-protocol-rules.md` |
+| GraphQL, gRPC, Gateway, WebSocket/RSocket, Authorization Server, Session, HATEOAS, SOAP/Web Services, LDAP | `references/api-protocol-rules.md` |
 | jOOQ, Spring Data NoSQL, Spring Data REST, data-access strategy beyond core JPA/JDBC/R2DBC | `references/data-access-rules.md` |
 | Version-specific behavior, compatibility, migration requirements, exact source links | `references/official-docs.md` |
 | Skill packaging or vendor compatibility for Codex/OpenAI, Claude, Antigravity | `references/vendor-compatibility.md` |
 
 Do not load every reference automatically if the user asks a narrow question.
 
-Use dependency ids as routing hints: `spring-ai-*`, `batch*`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `graphql`, `oauth2-authorization-server`, `session-*`, `jooq`, `cloud-starter-vault-config`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
+Use dependency ids as routing hints: `spring-ai-*`, `batch*`, `quartz`, `task`, `scheduling`, `data-redis`, `session-data-redis`, `lettuce`, `jedis`, `integration-redis`, `integration`, `amqp`, `pulsar`, `cloud-stream`, `spring-cloud-starter-gateway*`, `gateway`, `websocket`, `rsocket`, `graphql`, `oauth2-authorization-server`, `session-*`, `jooq`, `cloud-starter-vault-config`, `spring-grpc-*`, `web-services`, `ldap`, `hateoas`. Treat Spring Shell as CLI-specific and version-gated. Treat Spring Web Flow and other Projects in the Attic as legacy migration concerns.
 
 ## Review Setup
 
