@@ -46,7 +46,7 @@ Antigravity:
 - Antigravity routes primarily from `SKILL.md` frontmatter metadata, especially the description.
 - Keep the description narrow and explicit-triggered.
 - Keep detailed behavior out of frontmatter and in routed Markdown sections or reference files.
-- Install project-scoped skills under `<project-root>/.agents/skills/<skill-name>/SKILL.md`; this is the safest cross-vendor repo layout.
+- Install project-scoped skills under `<project-root>/.agents/skills/<skill-name>/`; this is the safest cross-vendor repo layout.
 - Official Antigravity codelabs describe global product scope as `~/.gemini/config/skills/`.
 - Antigravity may see skills installed under `~/.agents/skills`, but current Antigravity codelabs note that Antigravity CLI may require copying global skills to `~/.gemini/antigravity-cli/skills/`.
 - Prefer project-scoped `.agents/skills` for cross-vendor repos; use a global path only after validating the specific Antigravity runtime.

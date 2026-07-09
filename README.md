@@ -1,6 +1,6 @@
 # Spring Best Practice Skill
 
-Explicit-triggered Agent Skill for Spring and Spring Boot review work. It focuses on architecture, production readiness, security, data access, messaging, batch, AI, API design, migration risk, and operational tradeoffs.
+Explicitly triggered Agent Skill for Spring and Spring Boot review work. It focuses on architecture, production readiness, security, data access, messaging, batch, AI, API design, migration risk, and operational tradeoffs.
 
 This repository is the distribution package. Runtime instructions live in `SKILL.md`; heavier domain rules live in `references/` and are loaded only when the request needs them.
 
