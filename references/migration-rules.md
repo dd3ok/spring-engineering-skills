@@ -9,6 +9,12 @@ Use this file for Spring Boot, Spring Framework, Spring Security, Spring Data, S
 - Do not approve dependency overrides that bypass the Spring Boot BOM without compatibility evidence.
 - Treat exact requirements such as Java, Kotlin, GraalVM, Servlet, Jakarta, Jackson, Hibernate, and server support as target-version facts that must be checked against official sources before being stated firmly.
 
+## Spring Boot 4.x Checklist
+
+- Use this as a prompt checklist, not a substitute for the target line's official migration guide and system requirements.
+- Verify the project is first on the latest supported Spring Boot 3.5.x patch line when the official migration path recommends it.
+- Check Java, Kotlin, GraalVM, Maven/Gradle, Jakarta EE, Servlet, Spring Framework, Jackson, Hibernate, server support, starter/module splits, and removed features such as Undertow support against the exact target Boot 4.x line.
+
 ## Upgrade Path
 
 - Move to the latest patch of the current minor or major line first.
@@ -29,9 +35,16 @@ Use this file for Spring Boot, Spring Framework, Spring Security, Spring Data, S
 - Keep irreversible data migrations separate from application binary rollout unless the rollback story is explicit and tested.
 - Require dependency and CVE review after the version bump, not only before it.
 
+## Database and Data Rollout
+
+- Prefer expand/contract: add backward-compatible schema first, deploy compatible readers/writers, backfill idempotently, then enforce constraints or remove old shape after old binaries drain.
+- Review DDL lock behavior, online index support, default values, triggers, long transactions, replication lag, and throttling on the target database engine.
+- For dual-write, read-old/read-new, or backfill phases, define reconciliation metrics, retry behavior, cutover gates, and rollback gates.
+
 ## Immediate Anti-Patterns
 
 - Major upgrade plan that skips the official migration guide.
 - Version claims copied from memory instead of checked against the target line.
 - Spring Cloud release train upgraded independently from Spring Boot compatibility.
 - Jakarta migration that checks only application source and ignores generated code, tests, filters, validation, persistence, XML, or third-party libraries.
+- Irreversible schema or data changes coupled to a single application deploy with no tested rollback path.

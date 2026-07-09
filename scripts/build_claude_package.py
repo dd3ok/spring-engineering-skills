@@ -6,6 +6,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "dist" / "claude"
+MULTILINE_YAML_MARKERS = {"|", "|-", "|+", ">", ">-", ">+"}
+
+
+def ensure_simple_frontmatter(frontmatter: list[str], source_name: str) -> None:
+    for line in frontmatter:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line[:1].isspace() or line.startswith("-"):
+            raise SystemExit(
+                f"{source_name} frontmatter must use single-line key: value entries; multiline YAML is not supported"
+            )
+        key, sep, value = line.partition(":")
+        if not sep or not key.strip():
+            raise SystemExit(
+                f"{source_name} frontmatter must use single-line key: value entries; invalid line: {line}"
+            )
+        if value.strip() in MULTILINE_YAML_MARKERS:
+            raise SystemExit(
+                f"{source_name} frontmatter must use single-line key: value entries; multiline YAML is not supported"
+            )
 
 
 def build_skill_md() -> str:
@@ -19,6 +40,7 @@ def build_skill_md() -> str:
         raise SystemExit("SKILL.md frontmatter is not closed")
 
     frontmatter = source[4:end].strip().splitlines()
+    ensure_simple_frontmatter(frontmatter, "SKILL.md")
     body = source[end + len(marker) :].lstrip("\r\n")
 
     rendered: list[str] = []

@@ -39,10 +39,11 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Do not override Spring Framework, Spring Data, Reactor, Kafka, Hibernate, Micrometer, Spring Security, or Spring Cloud versions without verified compatibility evidence.
 - Match the Spring Cloud release train to the Spring Boot minor line. Check the Spring Cloud compatibility table for the exact supported range.
 - Before a major upgrade, first move to the latest patch version of the current major/minor line and remove deprecated APIs and properties.
-- For Spring Boot 4.x migrations, start from the latest 3.5.x line, review the Boot 4 migration guide and release notes, and verify Java 17+, Kotlin 2.2+, GraalVM 25+, Maven/Gradle requirements, Jakarta EE 11, Servlet 6.1, Spring Framework 7.x, Jackson 3, modularized starters/modules, and removed features such as Undertow support.
+- For major upgrades, load `references/migration-rules.md`; state exact Java, Kotlin, GraalVM, Jakarta, Servlet, Jackson, server, and build-tool requirements only after checking the target line's official sources.
 - For version and security checks, start with official release highlights, generation compatibility/support pages, and Spring security advisories before relying on blog posts or transitive dependency scanners alone.
 - Treat native-image, AOT, CRaC, and checkpoint/restore guidance as deployment-specific. Do not recommend them unless startup time, memory footprint, packaging, or platform requirements justify the tradeoff.
 - Treat externalized configuration as production behavior. Review property-source precedence, profile activation/groups, `spring.config.import`, config trees for mounted secrets, and fail-fast `@ConfigurationProperties` validation.
+- For Kotlin Spring applications, verify Spring Boot/Kotlin compatibility, compiler plugin use such as `kotlin-spring` and no-arg where needed, nullability boundaries, and Java interoperability.
 
 ## Configuration, Secrets, and Runtime State
 
@@ -69,13 +70,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Prefer RFC 9457 Problem Details for API error responses.
 - Avoid suffix-pattern content negotiation.
 - Define stable error codes, correlation IDs, and idempotency-key behavior in API contracts.
-- Prefer `RestClient` for imperative HTTP client code and `WebClient` for reactive pipelines. Do not use `WebClient` reactively and then immediately block in controllers or hot paths.
-- For new declarative HTTP clients, prefer Spring HTTP Service Clients where appropriate. Treat new OpenFeign usage as a compatibility decision and verify timeouts, retries, circuit breaking, and migration posture.
-- Require explicit connect and read timeouts for every remote call. For modern Boot applications, check whether global `spring.http.clients.*` settings or per-client builders are appropriate.
-- For Spring Boot 4.x HTTP Service Clients, verify group-specific `spring.http.serviceclient.<group>` base URL, timeout, redirect, default header, API versioning, and SSL bundle settings.
-- For Reactor Netty-backed clients, check connection pool limits, response timeout, TLS, proxy and redirect policy, DNS behavior, decoder limits, metrics, and tracing.
-- For outbound calls influenced by user-controlled URLs or hosts, review SSRF controls such as host allowlists, redirect behavior, proxy behavior, DNS/private-address handling, and Spring Boot `InetAddressFilter` support where applicable.
-- Bound retries and use exponential backoff with jitter. Retry only when idempotency or compensating logic exists.
+- For outbound HTTP, use baseline smoke checks only: client choice matches the app model, hot paths do not block reactive clients, every remote call has timeout/deadline behavior, user-influenced URLs have SSRF controls, and retries are bounded by idempotency or compensation.
 
 ## Security
 
@@ -84,6 +79,9 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 - Do not assume method-level authorization is active just because Spring Security is on the classpath. Check for explicit method-security enablement when service-layer authorization matters.
 - Keep CSRF enabled for browser/session-backed state-changing flows. Disable it only for stateless APIs or protocols where it is incompatible, and document why.
 - For OAuth2 resource servers, verify issuer/JWKS/introspection configuration, token audience/issuer validation, clock skew handling, and multi-tenant token validation if applicable.
+- For browser clients, review CORS origins, credentialed requests, cookie `Secure`/`HttpOnly`/`SameSite` settings, session fixation protection, and logout behavior.
+- For passwords, tokens, and reset flows, verify adaptive password hashing, token expiry and rotation, auditability, and absence of secrets in logs or traces.
+- For file upload/download paths, require size limits, type validation, path traversal controls, safe content disposition, storage isolation, and malware or content scanning where risk justifies it.
 - Avoid leaking authorization failure details in API responses. Prefer logs, audit events, and correlation IDs for diagnosis.
 
 ## Validation, Serialization, and External Side Effects
@@ -106,7 +104,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 ## Data Access
 
-- Use JPA for aggregate persistence and object mapping.
+- Prefer JPA when aggregate persistence, identity/lifecycle management, and object mapping fit the domain model.
 - Use `JdbcClient` or `JdbcTemplate` for SQL-heavy, bulk, reporting, or precise query paths.
 - Use jOOQ when type-safe SQL and schema-driven code generation matter, subject to Java-version and license constraints.
 - Use R2DBC only for reactive database access in a fully reactive path.
@@ -199,7 +197,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 ## Testing
 
-- Use slice tests for controller, repository, and service isolation.
+- Use Spring Boot slice tests for web, repository/data, serialization, and other framework slices; test service logic with unit tests or narrow Spring integration tests when Spring infrastructure is part of the behavior.
 - Prefer Spring's test support, including TestContext, MockMvc, WebTestClient, and Spring Boot test slices, over ad hoc integration harnesses.
 - Use Testcontainers for integration tests with real databases, Redis, Kafka, and dependent infrastructure.
 - Use `@ServiceConnection` when supported to reduce brittle property wiring.

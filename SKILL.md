@@ -15,7 +15,7 @@ Apply this skill only after explicit current-runtime invocation. Accepted activa
 - `/spring-best-practice-skill`
 - `spring bp`
 
-Loader behavior is vendor-specific. Codex/OpenAI documents `$spring-best-practice-skill` or `/skills` selection. Claude Code maps `/spring-best-practice-skill` to the skill directory name. Treat `spring bp` as portable only after runtime validation.
+Loader behavior is vendor-specific. Codex/OpenAI documents `$spring-best-practice-skill` or `/skills` selection. Claude Code maps `/spring-best-practice-skill` to the skill directory name. Treat `spring bp` as a validated local alias after load, not as a portable loader trigger.
 
 If this skill is loaded implicitly for any other Spring or Spring Boot request, do not apply the specialized review workflow. Briefly tell the user this skill is explicit-triggered and that they can use a supported activation path if they want this review mode.
 

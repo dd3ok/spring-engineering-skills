@@ -12,7 +12,7 @@ Documented loader triggers differ by runtime:
 - Claude Code: `/spring-best-practice-skill` when installed under the expected skill directory.
 - Antigravity: validate trigger behavior in the specific runtime; prefer project-scoped `.agents/skills/spring-best-practice-skill/`.
 
-After the skill has loaded, `spring bp` may be treated as a local alias only when the target runtime has been validated. Do not document it as a portable loader trigger.
+After the skill has loaded, `spring bp` may be treated as an in-body local alias only when the target runtime has been validated. Do not document it as a portable loader trigger or cross-runtime command.
 
 Do not rely on ordinary Spring wording to trigger the skill. The package is intentionally explicit-first.
 
@@ -29,7 +29,7 @@ Claude Code:
 
 - Direct invocation is based on the skill directory name, so the expected command is `/spring-best-practice-skill`.
 - The shared `SKILL.md` intentionally does not include Claude-only `disable-model-invocation: true`.
-- If a Claude-only package must block all model-triggered invocation, run `python scripts/build_claude_package.py` and publish the generated `dist/claude/` artifact.
+- If a Claude-only package must block all model-triggered invocation, run `python scripts/build_claude_package.py` and publish the generated `dist/claude/` artifact. In that mode, use `/spring-best-practice-skill` as the explicit command unless a separate Claude command/plugin alias has been implemented and validated.
 - Install as `~/.claude/skills/spring-best-practice-skill/`, `.claude/skills/spring-best-practice-skill/`, or as part of a Claude plugin.
 
 Antigravity:
@@ -114,7 +114,7 @@ Routing smoke tests before release:
 - Codex/OpenAI should trigger: `$spring-best-practice-skill review this Spring Boot service for production readiness`
 - Codex/OpenAI should trigger: selecting the skill from `/skills`, then asking for a Spring Boot production-readiness review.
 - Claude Code should trigger: `/spring-best-practice-skill review Redis cache and lock design`
-- `spring bp` should be accepted only after runtime alias validation.
+- `spring bp` should be accepted only as a validated local alias after the skill is loaded, not assumed to be a portable loader trigger.
 - Ordinary Spring prompts such as `Explain @Transactional in Spring` or `How do I create a Spring Boot controller?` should not trigger/load the skill; if a runtime loads it anyway, the skill should decline the specialized workflow.
 - Spring AI, RAG, ChatClient, tool calling, or vector store requests should route to `references/spring-ai-rules.md`.
 - jOOQ, NoSQL, Spring Data REST, or broad data-access strategy requests should route to `references/data-access-rules.md`.

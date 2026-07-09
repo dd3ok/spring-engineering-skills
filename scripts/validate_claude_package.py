@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from build_claude_package import ROOT, build_skill_md
+from build_claude_package import ROOT, build_skill_md, ensure_simple_frontmatter
 
 PACKAGE = ROOT / "dist" / "claude"
 
@@ -15,8 +15,11 @@ def parse_frontmatter(text: str) -> dict[str, str]:
     if end == -1:
         raise SystemExit("dist/claude/SKILL.md frontmatter is not closed")
 
+    lines = text[4:end].strip().splitlines()
+    ensure_simple_frontmatter(lines, "dist/claude/SKILL.md")
+
     result: dict[str, str] = {}
-    for line in text[4:end].splitlines():
+    for line in lines:
         if ":" not in line:
             continue
         key, value = line.split(":", 1)

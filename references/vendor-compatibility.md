@@ -41,7 +41,8 @@ Claude:
 - Do not validate `dist/claude` with Codex `quick_validate.py`; that validator correctly rejects Claude-only frontmatter.
 - Claude Code direct invocation uses the skill directory name, for example `/spring-best-practice-skill`; frontmatter `name` is mostly display metadata.
 - If publishing a Claude-only package that must be hard manual-only, generate a Claude-specific copy of `SKILL.md` with `disable-model-invocation: true` and document the slash command.
-- If the `spring bp` alias must keep working in Claude Code, do not use `disable-model-invocation`; rely on the strict description plus `Activation Policy` guard and validate runtime routing.
+- With `disable-model-invocation: true`, treat `spring bp` only as an in-body activation token after an explicit loader path has loaded the skill; it is not a Claude Code slash command by itself.
+- If a runtime-level `spring bp` command alias is required in Claude Code, implement and validate a Claude-specific command or plugin path instead of relying on model-triggered invocation.
 - Install as `~/.claude/skills/<skill-name>/SKILL.md`, `.claude/skills/<skill-name>/SKILL.md`, or a plugin skill.
 
 Antigravity:
