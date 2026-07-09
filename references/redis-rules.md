@@ -13,6 +13,7 @@ Use this file only when Redis, Spring Data Redis, Redis-backed cache/session, Re
 - Specify TTL or TTI, key prefixes, serializers, null-value caching, cache statistics, and clear/eviction strategy per cache.
 - Do not accept Redis cache defaults blindly: default entries can have no expiration, null values can be cached, values can use JDK serialization, and cache clearing can use `KEYS` unless a scan strategy is configured.
 - Avoid Java native serialization for untrusted data. Prefer explicit JSON, binary, or schema-based serialization with versioning rules.
+- For time-to-idle behavior, verify Redis server command support and make sure every access path uses commands that preserve the intended idle-expiration semantics.
 - Review cache stampede, hot keys, large values, key cardinality, compression, memory growth, maxmemory policy, and stale-data tolerance.
 - For two-level caching, define local-vs-Redis invalidation order, propagation delay, and behavior after partial invalidation failure.
 
@@ -36,6 +37,7 @@ Use this file only when Redis, Spring Data Redis, Redis-backed cache/session, Re
 
 - Verify topology explicitly: standalone, Sentinel, Cluster, managed Redis, cross-AZ, cross-region, persistence, backup/restore, failover time, and client routing behavior.
 - Check Lettuce versus Jedis capability differences, especially reactive support, cluster behavior, pooling, native connection sharing, pub/sub, pipelining, transactions, and unsupported command behavior.
+- Treat `RedisTemplate` as thread-safe after configuration, but do not assume low-level `RedisConnection` instances are generally thread-safe; check connector-specific behavior before sharing native connections.
 - Configure command timeout, connect timeout, SSL/TLS, authentication/ACLs, pool or multiplexing strategy, retry policy, and client metrics deliberately.
 - For Redis Cluster, review key tags for multi-key operations and avoid assuming Lua, transactions, or WATCH-style atomicity works across slots.
 

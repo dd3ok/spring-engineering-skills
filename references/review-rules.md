@@ -149,14 +149,7 @@ Use these rules for Spring and Spring Boot architecture reviews, code reviews, m
 
 - Load `references/redis-rules.md` when Redis is central to cache design, session storage, locks, rate limiting, streams, pub/sub, or topology.
 - Use Redis cache for shared, short-lived, invalidatable data. Use local Caffeine for hot per-instance cache when appropriate.
-- Specify TTLs, key prefixes, serializers, and cache-null behavior deliberately.
-- Do not accept Redis cache defaults blindly: default cache entries have no expiration, values use JDK serialization, and cache clearing can use `KEYS` unless configured otherwise.
-- Avoid Java native serialization for untrusted data. Prefer JSON or another explicit serialization format.
-- Treat `RedisTemplate` as thread-safe, but do not assume low-level `RedisConnection` instances are generally thread-safe.
-- Do not use Redis distributed locks for correctness-critical mutual exclusion unless fencing tokens or a stronger consensus or transactional mechanism protects the resource.
-- Review cache stampede, hot keys, large values, eviction policy, and memory growth before high-traffic launch.
-- For time-to-idle behavior, verify Redis server command support and consistent access paths.
-- If Redis is more than a cache-aside store, verify topology and failover explicitly: standalone plus Sentinel, Cluster, managed service behavior, persistence, eviction policy, connection pooling or multiplexing, and client retry behavior.
+- In baseline review, flag missing TTL/key-prefix/serializer/null-cache policy, large `KEYS` clears, correctness-critical Redis locks without fencing or idempotency, and unreviewed topology/failover assumptions.
 
 ## Scheduling and Async Work
 
