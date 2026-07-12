@@ -12,7 +12,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urljoin, urlsplit
 
 
@@ -21,6 +20,7 @@ BARE_URL = re.compile(r"https?://[^\s<`]+")
 RUNTIME_PATH = re.compile(r"`((?:references|scripts|assets)/[^`]+)`")
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 INCONCLUSIVE_STATUS = {401, 403, 429}
+REDIRECT_STATUS = {301, 302, 303, 307, 308}
 
 
 @dataclass(frozen=True)
@@ -202,7 +202,9 @@ def open_external(url: str, timeout: float, allow_private: bool = False) -> tupl
                 continue
             finally:
                 connection.close()
-            if status in {301, 302, 303, 307, 308} and location:
+            if status in REDIRECT_STATUS and not location:
+                raise ValueError(f"redirect HTTP {status} is missing a Location header: {current}")
+            if status in REDIRECT_STATUS:
                 current = urljoin(current, location)
                 break
             return status, current
@@ -220,21 +222,19 @@ def check_external_link(url: str, timeout: float, retries: int, allow_private: b
             status, final_url = open_external(url, timeout, allow_private)
             if urlsplit(url).scheme == "https" and urlsplit(final_url).scheme == "http":
                 return LinkResult("failed", url, f"redirected to insecure URL: {final_url}")
-            if status in INCONCLUSIVE_STATUS:
-                return LinkResult("inconclusive", url, f"HTTP {status}: {final_url}")
             if status >= 400:
-                return LinkResult("failed", url, f"HTTP {status}: {final_url}")
-            return LinkResult("ok", url, final_url if final_url != url else "")
-        except HTTPError as error:
-            last_detail = f"HTTP {error.code}: {error.geturl()}"
-            if error.code in INCONCLUSIVE_STATUS and error.code not in RETRYABLE_STATUS:
-                return LinkResult("inconclusive", url, last_detail)
-            if error.code not in RETRYABLE_STATUS or attempt == retries:
-                status = "inconclusive" if error.code in INCONCLUSIVE_STATUS else "failed"
-                return LinkResult(status, url, last_detail)
+                last_detail = f"HTTP {status}: {final_url}"
+                if status in RETRYABLE_STATUS and attempt < retries:
+                    time.sleep(0.25 * (2**attempt))
+                    continue
+                result_status = "inconclusive" if status in INCONCLUSIVE_STATUS else "failed"
+                return LinkResult(result_status, url, last_detail)
+            if 200 <= status < 300:
+                return LinkResult("ok", url, final_url if final_url != url else "")
+            return LinkResult("failed", url, f"unexpected HTTP {status}: {final_url}")
         except ValueError as error:
             return LinkResult("failed", url, str(error))
-        except (TimeoutError, URLError, OSError, http.client.HTTPException) as error:
+        except (TimeoutError, OSError, http.client.HTTPException) as error:
             last_detail = f"{type(error).__name__}: {error}"
             if attempt == retries:
                 return LinkResult("inconclusive", url, last_detail)
