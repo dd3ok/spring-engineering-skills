@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spring-engineering-skills:schema:spring-evidence:1",
+  "title": "Spring repository evidence",
+  "type": "object",
+  "required": ["schema_version", "repository", "collection", "projects", "facts", "conflicts", "gaps", "redaction"],
+  "properties": {
+    "schema_version": {"const": "spring-evidence/1"},
+    "repository": {
+      "type": "object",
+      "required": ["root"],
+      "properties": {"root": {"const": "."}},
+      "additionalProperties": false
+    },
+    "collection": {
+      "type": "object",
+      "required": ["collector_version", "mode", "network_used", "build_executed", "provenance"],
+      "properties": {
+        "collector_version": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["static", "imported-resolved"]},
+        "network_used": {"type": "boolean"},
+        "build_executed": {"type": "boolean"},
+        "provenance": {
+          "type": ["object", "null"],
+          "required": ["producer", "tool", "tool_version", "command_or_settings", "collected_at", "environment_id", "project_identity", "sanitization"],
+          "properties": {
+            "producer": {"type": "string", "minLength": 1},
+            "tool": {"type": "string", "minLength": 1},
+            "tool_version": {"type": "string", "minLength": 1},
+            "command_or_settings": {"type": "string", "minLength": 1},
+            "collected_at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+            "environment_id": {"type": "string", "minLength": 1},
+            "project_identity": {"type": "string", "minLength": 1},
+            "sanitization": {
+              "type": "object",
+              "required": ["status", "configuration_values_omitted", "determinative_fields_preserved"],
+              "properties": {
+                "status": {"const": "sanitized"},
+                "configuration_values_omitted": {"const": true},
+                "determinative_fields_preserved": {"const": true}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "build_system", "descriptor", "module_ids"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^project:"},
+          "path": {"type": "string"},
+          "build_system": {"enum": ["maven", "gradle"]},
+          "descriptor": {"type": "string"},
+          "module_ids": {"type": "array", "items": {"type": "string", "pattern": "^project:"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "project_id", "kind", "name", "value", "certainty", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^fact:[a-f0-9]{64}$"},
+          "project_id": {"type": "string", "pattern": "^project:"},
+          "kind": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "value": {"type": "string", "minLength": 1},
+          "certainty": {"enum": ["resolved", "effective", "declared", "inferred"]},
+          "source": {
+            "type": "object",
+            "required": ["type", "path"],
+            "properties": {
+              "type": {"const": "file"},
+              "path": {"type": "string", "minLength": 1},
+              "line": {"type": "integer", "minimum": 1}
+            },
+            "additionalProperties": false
+          },
+          "declaration_role": {"type": "string"},
+          "scope": {"type": "string"},
+          "catalog_source": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["project_id", "kind", "name", "values", "fact_ids"],
+        "properties": {
+          "project_id": {"type": "string"},
+          "kind": {"type": "string"},
+          "name": {"type": "string"},
+          "values": {"type": "array", "items": {"type": "string"}},
+          "fact_ids": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "path"],
+        "properties": {"kind": {"type": "string"}, "path": {"type": "string"}},
+        "additionalProperties": false
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "required": ["configuration_values_omitted", "environment_read"],
+      "properties": {
+        "configuration_values_omitted": {"const": true},
+        "environment_read": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "reason"],
+        "properties": {"path": {"type": "string"}, "reason": {"type": "string"}},
+        "additionalProperties": false
+      }
+    },
+    "deployment_paths": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"collection": {"properties": {"mode": {"const": "static"}}}}},
+      "then": {
+        "properties": {
+          "collection": {"properties": {"provenance": {"type": "null"}}},
+          "facts": {"items": {"properties": {"certainty": {"enum": ["declared", "inferred"]}}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"collection": {"properties": {"mode": {"const": "imported-resolved"}}}}},
+      "then": {"properties": {"collection": {"properties": {"provenance": {"type": "object"}}}}}
+    }
+  ],
+  "additionalProperties": false
+}
