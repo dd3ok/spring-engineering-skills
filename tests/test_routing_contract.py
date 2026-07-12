@@ -39,11 +39,11 @@ class RoutingContractTests(unittest.TestCase):
         self.assertTrue(any("prompt lacks route signals" in error for error in errors))
 
     def test_none_case_rejects_named_skill(self) -> None:
-        errors = self.validate_modified_cases(
-            lambda cases: cases[-1].update(
-                prompt="Use spring-modulith-auditor to explain transactions"
-            )
-        )
+        def name_skill_in_none_case(cases: list[dict[str, object]]) -> None:
+            case = next(item for item in cases if item["id"] == "ordinary-spring-question")
+            case["prompt"] = "Use spring-modulith-auditor to explain transactions"
+
+        errors = self.validate_modified_cases(name_skill_in_none_case)
         self.assertTrue(any("must not name a skill" in error for error in errors))
 
     def test_missing_negative_coverage_is_rejected(self) -> None:
