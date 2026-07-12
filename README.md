@@ -1,224 +1,95 @@
-# Spring Best Practice Skill
+# Spring Engineering Skills
 
-[한국어 README](README.ko.md)
+A vendor-neutral, evidence-driven suite of focused Agent Skills for Spring engineering. Each directory under `skills/` is an independent, portable skill with only skill-local references and scripts.
 
-A portable Agent Skill that gives Codex, Claude Code, Antigravity, and other Agent Skills clients a findings-first Spring Boot reviewer.
+## Skills
 
-Use it when you want an AI coding agent to review Spring or Spring Boot architecture, production readiness, dependency choices, migrations, security, data access, messaging, batch jobs, Spring AI usage, HTTP clients, API protocols, and rollout risk.
+| Skill | Job | Primary output |
+| --- | --- | --- |
+| `spring-evidence-collector` | Read-only, redacted repository inventory | Deterministic `spring-evidence/1` JSON |
+| `spring-upgrade-planner` | Spring/Java/build-tool migration planning | Compatibility gates and staged upgrade plan |
+| `spring-best-practice-review` | Broad or focused static Spring review | Evidence-ranked findings and remediation |
+| `spring-performance-investigator` | Runtime performance diagnosis | Ranked hypotheses, confirmed bottlenecks, and controlled experiments |
+| `spring-security-threat-modeler` | Trust-boundary and abuse-path analysis | Threat register and testable security acceptance criteria |
+| `spring-test-gap-planner` | Risk-to-test evidence analysis | Prioritized test-gap matrix |
+| `spring-modulith-auditor` | Application-module boundary audit | Dependency violations and refactor stages |
 
-## When To Use
+Each skill owns a distinct depth and output. The broad review flags static design risks; the dedicated skills own evidence collection, upgrade-plan creation, runtime diagnosis, threat models, test backlogs, and module graphs.
 
-Good fits:
-
-- Reviewing a Spring Boot service before production release
-- Reviewing Spring architecture, module boundaries, configuration, or dependency choices
-- Checking security, observability, transaction, HTTP client, cache, messaging, scheduling, batch, or data-access risks
-- Reviewing Spring AI, RAG, ChatClient, vector store, tool-calling, or model-provider failure modes
-- Planning a major upgrade involving Spring Boot, Spring Framework, Spring Security, Spring Data, Spring Cloud, Java, Kotlin, Jakarta, Maven, or Gradle
-- Challenging an architecture proposal, migration plan, or production-readiness claim
-
-Poor fits:
-
-- Basic Spring explanations, such as how `@Transactional` works
-- Generic Java help without a Spring review surface
-- Broad best-practice summaries without code, dependencies, design, or operating assumptions to review
-
-## How It Reviews
-
-The skill starts with `SKILL.md`, then loads focused reference files only when the request needs them. Reviews should lead with concrete findings, severity, evidence, and affected files or components before broader recommendations.
-
-Default review shape:
-
-```markdown
-## Findings
-## Verdict
-## Evidence
-## Recommendations
-## Tests
-## Operations
-## Open Questions
-```
-
-Missing inputs should become conservative assumptions, not invented facts. Recent or version-specific claims should be checked against official Spring documentation.
-
-## Review Coverage
-
-| Review surface | Reference |
-| --- | --- |
-| Core Spring/Spring Boot architecture, production readiness, security, observability, transactions | `references/review-rules.md` |
-| Major version upgrades and dependency compatibility | `references/migration-rules.md` |
-| HTTP clients, service-to-service deadlines, retries, pools, SSRF | `references/http-client-rules.md` |
-| Redis cache, locks, topology, sessions, rate limiting, streams, pub/sub | `references/redis-rules.md` |
-| Scheduling, `@Scheduled`, Quartz, async executors, overlap, virtual-thread scheduling | `references/scheduling-rules.md` |
-| Spring AI, LLM/RAG, ChatClient, vector stores, tool calling, MCP, evaluations | `references/spring-ai-rules.md` |
-| Spring Batch jobs, restartability, partitioning, chunk processing | `references/spring-batch-rules.md` |
-| RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, JMS | `references/messaging-rules.md` |
-| GraphQL, gRPC, Authorization Server, Session, HATEOAS, SOAP/Web Services, LDAP | `references/api-protocol-rules.md` |
-| jOOQ, NoSQL, Spring Data REST, data-access strategy beyond core JPA/JDBC/R2DBC | `references/data-access-rules.md` |
-| Official source links for version-specific claims | `references/official-docs.md` |
-| Packaging and runtime compatibility | `references/vendor-compatibility.md` |
-
-## Quick Start
-
-Codex/OpenAI:
+## Layout
 
 ```text
-$spring-best-practice-skill review this Spring Boot service for production readiness.
+skills/<skill-name>/
+  SKILL.md
+  references/
+  scripts/              # only when deterministic automation helps
+evals/
+scripts/
+tests/
 ```
 
-Claude Code:
+No plugin manifest, marketplace metadata, host-specific agent metadata, or generated vendor package is part of the source contract.
+
+## Use
+
+Select a skill through the host's supported skill mechanism or request it by exact name. Discovery and invocation syntax are host concerns and are intentionally not encoded in these skills.
 
 ```text
-/spring-best-practice-skill review the Redis cache and lock design in this project.
+Use spring-evidence-collector to collect a safe inventory of this repository.
+Use spring-upgrade-planner to plan a Spring Boot 3.5 to 4.1 upgrade.
+Use spring-best-practice-review to review this service for production readiness.
 ```
 
-The skill is explicit-first. In Codex, `agents/openai.yaml` sets `policy.allow_implicit_invocation: false`, so ordinary Spring prompts should not automatically load this review workflow.
+To install one skill, copy its complete `skills/<skill-name>/` directory into a skill location supported by the target host. Do not split its `SKILL.md`, `references/`, or `scripts/` across locations.
 
-## Install
+## Python runtime
 
-### Codex/OpenAI
+The deterministic scripts require Python 3.12 or newer. They use only the standard library.
 
-For repo-scoped use:
+## Evidence collector
+
+Static collection never runs a build or network request and never emits configuration values:
 
 ```text
-<repo>/.agents/skills/spring-best-practice-skill/
+python skills/spring-evidence-collector/scripts/collect_evidence.py <repository> --output evidence.json
+python skills/spring-evidence-collector/scripts/validate_evidence.py evidence.json
 ```
 
-For user-scoped use:
+Maven inheritance/profiles and executable Gradle logic require effective or resolved reports produced in a separately controlled environment. Static declarations remain `declared` or `inferred`.
+
+## Upgrade planner
+
+Create a deterministic draft from evidence and an exact target:
 
 ```text
-$HOME/.agents/skills/spring-best-practice-skill/
+python skills/spring-upgrade-planner/scripts/build_plan_skeleton.py evidence.json --target 4.1.0 --output upgrade-plan.json
+python skills/spring-upgrade-planner/scripts/validate_upgrade_plan.py upgrade-plan.json
 ```
 
-Codex usually detects skill changes automatically. Restart Codex if the skill does not appear.
+The plan stays `draft` until official support, compatibility, migration, verification, rollback, and content-addressed source evidence are attached. `latest` is not inferred without pinned metadata, and downgrades require explicit opt-in.
 
-### Claude Code
-
-Install as one of:
+## Validation
 
 ```text
-~/.claude/skills/spring-best-practice-skill/
-<repo>/.claude/skills/spring-best-practice-skill/
+python scripts/validate_all.py
 ```
 
-The shared `SKILL.md` stays portable and does not include Claude-only frontmatter. If you need a Claude-specific manual-only package, generate and validate it:
+This vendor-neutral command checks skill structure and source policy, routing and behavior contracts, all unit tests, and offline links. Run the individual scripts under `scripts/` when isolating a failure.
 
-```powershell
-python scripts/build_claude_package.py
-python scripts/validate_claude_package.py
-```
-
-Publish the generated `dist/claude/` artifact for Claude-specific distribution.
-
-### Antigravity
-
-Prefer a project-scoped install while validating behavior:
+External sources can be checked separately:
 
 ```text
-<project-root>/.agents/skills/spring-best-practice-skill/
+python scripts/check_links.py --online --json-report dist/link-report.json
 ```
 
-Antigravity and Antigravity CLI skill discovery can differ by runtime. Validate the exact install path and invocation behavior before documenting aliases or global locations.
+## Source policy
 
-## Package Layout
+Re-check version-sensitive claims. Prefer official Spring and dependency documentation, release notes, migration guides, BOMs, specifications, and project repositories; use canonical research or major engineering publications as supporting material. Do not use a blog post as the sole source for framework semantics.
 
-```text
-spring-best-practice-skill/
-|-- SKILL.md
-|-- README.md
-|-- README.ko.md
-|-- agents/
-|   `-- openai.yaml
-|-- scripts/
-|   |-- build_claude_package.py
-|   `-- validate_claude_package.py
-`-- references/
-    |-- api-protocol-rules.md
-    |-- data-access-rules.md
-    |-- http-client-rules.md
-    |-- messaging-rules.md
-    |-- migration-rules.md
-    |-- official-docs.md
-    |-- redis-rules.md
-    |-- review-rules.md
-    |-- scheduling-rules.md
-    |-- spring-ai-rules.md
-    |-- spring-batch-rules.md
-    `-- vendor-compatibility.md
-```
+The repository structure follows the [Agent Skills specification](https://agentskills.io/specification). Technical source maps live inside each skill so the skill remains portable. Behavior prompts and blind forward-test scoring rules are documented in [evals/README.md](evals/README.md).
 
-`dist/claude/` is generated release output. Do not hand-edit it.
+## Migration from the former single skill
 
-## More Examples
-
-Architecture review:
-
-```text
-$spring-best-practice-skill review this migration plan from Spring Boot 3.5 to 4.x. Focus on dependency compatibility, Jakarta changes, security behavior, and rollout risk.
-```
-
-Spring AI review:
-
-```text
-$spring-best-practice-skill review this Spring AI RAG design. Check retrieval boundaries, tool calling safety, evaluation coverage, and model-provider failure modes.
-```
-
-HTTP client review:
-
-```text
-$spring-best-practice-skill review our RestClient/WebClient timeout, retry, and SSRF posture.
-```
-
-## Validate
-
-Run the Codex skill structural validator:
-
-```powershell
-python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
-```
-
-Expected:
-
-```text
-Skill is valid!
-```
-
-Run repository maintenance checks:
-
-```powershell
-git diff --check
-```
-
-Build and validate the Claude package only when preparing a Claude release artifact:
-
-```powershell
-python scripts/build_claude_package.py
-python scripts/validate_claude_package.py
-```
-
-Expected:
-
-```text
-Claude package is valid!
-```
-
-Do not run Codex `quick_validate.py` against `dist/claude/`; that generated package intentionally contains Claude-specific frontmatter.
-
-## Release Checklist
-
-- Keep `SKILL.md` frontmatter portable.
-- Keep the skill description narrow enough to avoid accidental Spring-question activation.
-- Confirm `agents/openai.yaml` still has `policy.allow_implicit_invocation: false`.
-- Run `quick_validate.py`.
-- Run `git diff --check`.
-- Regenerate and validate `dist/claude/` only for Claude-specific releases.
-- Smoke-test explicit invocation in each target runtime before publishing usage claims.
-- Check `references/vendor-compatibility.md` before changing activation policy, install paths, or vendor-specific metadata.
-
-## References
-
-- [OpenAI Codex Agent Skills](https://developers.openai.com/codex/skills)
-- [Claude Code skills documentation](https://code.claude.com/docs/en/skills)
-- [Anthropic Agent Skills overview](https://console.anthropic.com/docs/en/agents-and-tools/agent-skills/overview)
-- [Google Antigravity skills authoring codelab](https://codelabs.developers.google.com/getting-started-google-antigravity)
-- [Google Antigravity CLI skills codelab](https://codelabs.developers.google.com/antigravity/how-to-create-agent-skills-for-antigravity-cli)
+- The broad review moved from root `SKILL.md` to `skills/spring-best-practice-review/`.
+- Specialized workflows moved into sibling skill directories under `skills/`.
+- Host-specific plugin, marketplace, and agent metadata are intentionally unsupported.

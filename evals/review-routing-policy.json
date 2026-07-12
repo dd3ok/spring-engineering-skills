@@ -1,0 +1,26 @@
+{
+  "always": ["references/core-review-rules.md"],
+  "routes": {
+    "broad": ["references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md"],
+    "web": ["references/web-security-rules.md"],
+    "transaction-data": ["references/transaction-data-rules.md"],
+    "kafka": ["references/kafka-rules.md"],
+    "architecture-operations": ["references/architecture-operations-rules.md"],
+    "migration": ["references/migration-rules.md"],
+    "http-client": ["references/http-client-rules.md"],
+    "redis": ["references/redis-rules.md"],
+    "scheduling": ["references/scheduling-rules.md"],
+    "spring-ai": ["references/spring-ai-rules.md"],
+    "spring-batch": ["references/spring-batch-rules.md"],
+    "messaging": ["references/messaging-rules.md"],
+    "api-protocol": ["references/api-protocol-rules.md"],
+    "extended-data-access": ["references/data-access-rules.md"],
+    "postgresql": ["references/postgresql-rules.md"],
+    "static-performance": ["references/performance-rules.md"],
+    "version-spring": ["references/spring-core-sources.md"],
+    "version-data": ["references/data-sources.md"],
+    "version-messaging": ["references/messaging-sources.md"],
+    "version-specialized": ["references/specialized-sources.md"],
+    "version-operations": ["references/operations-sources.md"]
+  }
+}

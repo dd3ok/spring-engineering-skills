@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spring-engineering-skills:schema:spring-upgrade-plan:2",
+  "title": "Spring upgrade plan",
+  "type": "object",
+  "required": ["schema_version", "status", "input", "current", "target", "policy", "compatibility_gates", "hops", "automation", "rollout", "unresolved", "source_ledger"],
+  "properties": {
+    "schema_version": {"const": "spring-upgrade-plan/2"},
+    "status": {"enum": ["ready", "draft", "blocked"]},
+    "input": {
+      "type": "object",
+      "required": ["evidence_sha256", "target", "source_snapshot_ids"],
+      "properties": {
+        "evidence_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "target": {"type": "string"},
+        "source_snapshot_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "current": {
+      "type": "object",
+      "required": ["spring_boot", "spring_cloud", "spring_cloud_usage", "evidence_ids", "spring_cloud_evidence_ids"],
+      "properties": {
+        "spring_cloud": {"type": ["string", "null"]},
+        "spring_cloud_usage": {"enum": ["used", "not-used", "unknown"]},
+        "spring_cloud_evidence_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["spring_boot", "spring_cloud", "spring_cloud_usage", "java", "build_tool", "build_tool_version", "prerelease_allowed"],
+      "properties": {
+        "spring_cloud": {"type": ["string", "null"]},
+        "spring_cloud_usage": {"enum": ["used", "not-used", "unknown"]},
+        "java": {"type": ["string", "null"]},
+        "build_tool": {"enum": ["maven", "gradle", null]},
+        "build_tool_version": {"type": ["string", "null"]}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["allow_downgrade"],
+      "properties": {"allow_downgrade": {"type": "boolean"}}
+    },
+    "compatibility_gates": {"type": "array", "minItems": 3, "items": {"type": "object"}},
+    "hops": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "automation": {"type": "array"},
+    "rollout": {"type": "object"},
+    "unresolved": {"type": "array", "items": {"type": "string"}},
+    "source_ledger": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "locator", "publisher", "checked_version", "checked_spring_cloud", "subject", "subject_version", "scope", "applies_from", "applies_to", "snapshot_path", "sha256", "capture"],
+        "properties": {
+          "checked_spring_cloud": {"type": ["string", "null"]},
+          "subject": {"type": ["string", "null"]},
+          "subject_version": {"type": ["string", "null"]},
+          "capture": {
+            "type": ["object", "null"],
+            "required": ["method", "captured_at", "captured_by", "final_locator", "response_sha256"],
+            "properties": {
+              "method": {"const": "controlled-fetch"},
+              "captured_at": {"type": "string"},
+              "captured_by": {"type": "string"},
+              "final_locator": {"type": "string"},
+              "response_sha256": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

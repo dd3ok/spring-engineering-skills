@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+import sys
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import validate_all  # noqa: E402
+
+
+class ValidateAllTests(unittest.TestCase):
+    def test_command_set_covers_every_repository_check(self) -> None:
+        commands = validate_all.validation_commands("python-test")
+        flattened = [" ".join(command) for _, command in commands]
+        for required in (
+            "validate_skill_structure.py",
+            "validate_source_policy.py",
+            "validate_routing_contract.py",
+            "validate_behavior_cases.py",
+            "unittest discover",
+            "check_links.py --offline",
+        ):
+            self.assertTrue(any(required in command for command in flattened), required)
+        self.assertTrue(all(command[0] == "python-test" for _, command in commands))
+
+    @patch("validate_all.subprocess.run")
+    def test_runner_stops_at_first_failure(self, run: Mock) -> None:
+        run.side_effect = [Mock(returncode=0), Mock(returncode=7), Mock(returncode=0)]
+        commands = (("one", ("python", "one.py")), ("two", ("python", "two.py")), ("three", ("python", "three.py")))
+        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = validate_all.run(commands, ROOT)
+        self.assertEqual(result, 7)
+        self.assertEqual(run.call_count, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
