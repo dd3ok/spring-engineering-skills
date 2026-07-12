@@ -41,9 +41,24 @@ GRADLE_DEPENDENCY = re.compile(
     r"(?m)^\s*(implementation|api|compileOnly|runtimeOnly|testImplementation|testRuntimeOnly)"
     r"\s*\(?\s*[\"']([^\"']+)[\"']"
 )
-GRADLE_PLUGIN = re.compile(r"(?:id\s*\(?\s*[\"']([^\"']+)[\"']\s*\)?|id\s+[\"']([^\"']+)[\"'])\s+version\s+[\"']([^\"']+)[\"']")
+GRADLE_PLUGIN = re.compile(
+    r"(?:id\s*\(\s*[\"']([^\"']+)[\"']\s*\)|id\s+[\"']([^\"']+)[\"'])"
+    r"\s*\.?\s*(?:version\s+[\"']([^\"']+)[\"']|version\s*\(\s*[\"']([^\"']+)[\"']\s*\))"
+    r"\s*(?:(?:\.?\s*apply\s+(false|true))|(?:\.?\s*apply\s*\(\s*(false|true)\s*\)))?"
+)
+GRADLE_KOTLIN_PLUGIN = re.compile(
+    r"kotlin\s*\(\s*[\"']([^\"']+)[\"']\s*\)"
+    r"\s*\.?\s*(?:version\s+[\"']([^\"']+)[\"']|version\s*\(\s*[\"']([^\"']+)[\"']\s*\))"
+    r"\s*(?:(?:\.?\s*apply\s+(false|true))|(?:\.?\s*apply\s*\(\s*(false|true)\s*\)))?"
+)
+GRADLE_PLUGIN_APPLICATION = re.compile(
+    r"(?:id\s*\(\s*[\"']([^\"']+)[\"']\s*\)|id\s+[\"']([^\"']+)[\"'])"
+    r"(?!\s*\.?\s*version\b)"
+    r"\s*(?:(?:\.?\s*apply\s+(false|true))|(?:\.?\s*apply\s*\(\s*(false|true)\s*\)))?"
+)
 GRADLE_PLUGIN_ALIAS = re.compile(
-    r"\balias\(\s*libs\.plugins\.([A-Za-z0-9_.-]+)\s*\)(?:\s+apply\s+(false|true))?"
+    r"\balias\(\s*libs\.plugins\.([A-Za-z0-9_.-]+)\s*\)"
+    r"\s*(?:(?:\.?\s*apply\s+(false|true))|(?:\.?\s*apply\s*\(\s*(false|true)\s*\)))?"
 )
 GRADLE_INCLUDE_START = re.compile(r"^\s*include\b(?!Build\b|Flat\b)\s*(.*)$")
 GRADLE_STRING = re.compile(r"[\"']([^\"']+)[\"']")
@@ -63,6 +78,30 @@ require_supported_python()
 def posix(path: Path, root: Path) -> str:
     relative = path.relative_to(root)
     return "." if not relative.parts else relative.as_posix()
+
+
+def project_id_for_path(path: Path, root: Path, project_roots: list[Path]) -> str:
+    for candidate in project_roots:
+        try:
+            path.relative_to(candidate)
+            return "project:" + posix(candidate, root)
+        except ValueError:
+            continue
+    return "project:."
+
+
+def absolute_from_posix(root: Path, value: str) -> Path:
+    return root if value == "." else root.joinpath(*PurePosixPath(value).parts)
+
+
+def nearest_ancestor(path: Path, candidates: list[Path]) -> Path | None:
+    for candidate in candidates:
+        try:
+            path.relative_to(candidate)
+            return candidate
+        except ValueError:
+            continue
+    return None
 
 
 def is_link_or_junction(path: Path) -> bool:
@@ -338,7 +377,13 @@ def gradle_plugin_blocks(text: str) -> list[tuple[int, str]]:
     return blocks
 
 
-def parse_gradle(path: Path, root: Path, text: str, facts: list[dict[str, Any]]) -> dict[str, Any]:
+def parse_gradle(
+    path: Path,
+    root: Path,
+    text: str,
+    facts: list[dict[str, Any]],
+    plugin_applications: list[dict[str, Any]],
+) -> dict[str, Any]:
     label = posix(path, root)
     project_id = "project:" + str(Path(label).parent).replace("\\", "/")
     sanitized = strip_gradle_comments(text)
@@ -353,14 +398,32 @@ def parse_gradle(path: Path, root: Path, text: str, facts: list[dict[str, Any]])
     for block_start, block in gradle_plugin_blocks(sanitized):
         for match in GRADLE_PLUGIN.finditer(block):
             plugin = match.group(1) or match.group(2)
+            version = match.group(3) or match.group(4)
+            apply_state = match.group(5) or match.group(6)
             line = sanitized.count("\n", 0, block_start + match.start()) + 1
-            add_fact(facts, kind="plugin.version", name=plugin, value=match.group(3), certainty="inferred",
-                     project_id=project_id, path=label, line=line, declaration_role="gradle-plugin-block")
-            if plugin == "org.springframework.boot":
-                add_fact(facts, kind="platform.version", name="spring-boot", value=match.group(3), certainty="inferred",
+            role = "gradle-plugin-block:apply-false" if apply_state == "false" else "gradle-plugin-block"
+            add_fact(facts, kind="plugin.version", name=plugin, value=version, certainty="inferred",
+                     project_id=project_id, path=label, line=line, declaration_role=role)
+            if plugin == "org.springframework.boot" and apply_state != "false":
+                add_fact(facts, kind="platform.version", name="spring-boot", value=version, certainty="inferred",
                          project_id=project_id, path=label, line=line, declaration_role="gradle-plugin-block")
+        for match in GRADLE_KOTLIN_PLUGIN.finditer(block):
+            plugin = f"org.jetbrains.kotlin.{match.group(1)}"
+            version = match.group(2) or match.group(3)
+            line = sanitized.count("\n", 0, block_start + match.start()) + 1
+            add_fact(facts, kind="plugin.version", name=plugin, value=version, certainty="inferred",
+                     project_id=project_id, path=label, line=line, declaration_role="gradle-kotlin-plugin-block")
+        for match in GRADLE_PLUGIN_APPLICATION.finditer(block):
+            if (match.group(3) or match.group(4)) == "false":
+                continue
+            plugin_applications.append({
+                "project_id": project_id,
+                "plugin": match.group(1) or match.group(2),
+                "path": label,
+                "line": sanitized.count("\n", 0, block_start + match.start()) + 1,
+            })
         for match in GRADLE_PLUGIN_ALIAS.finditer(block):
-            if match.group(2) == "false":
+            if (match.group(2) or match.group(3)) == "false":
                 continue
             alias = match.group(1).replace("-", ".").replace("_", ".")
             add_fact(facts, kind="plugin.alias.applied", name=alias, value="present", certainty="inferred",
@@ -450,7 +513,14 @@ def catalog_version(value: object, versions: dict[str, object]) -> tuple[str, st
     return "unresolved", "inferred"
 
 
-def parse_version_catalog(path: Path, root: Path, text: str, facts: list[dict[str, Any]], gaps: list[dict[str, str]]) -> None:
+def parse_version_catalog(
+    path: Path,
+    root: Path,
+    text: str,
+    facts: list[dict[str, Any]],
+    gaps: list[dict[str, str]],
+    project_id: str,
+) -> None:
     label = posix(path, root)
     try:
         catalog = tomllib.loads(text)
@@ -463,7 +533,7 @@ def parse_version_catalog(path: Path, root: Path, text: str, facts: list[dict[st
     for alias, value in sorted(versions.items()):
         version, certainty = catalog_version(value, versions)
         add_fact(facts, kind="catalog.version", name=str(alias), value=version, certainty=certainty,
-                 project_id="project:.", path=label, declaration_role="version-catalog")
+                 project_id=project_id, path=label, declaration_role="version-catalog")
     libraries = catalog.get("libraries", {})
     if isinstance(libraries, dict):
         for alias, value in sorted(libraries.items()):
@@ -483,7 +553,7 @@ def parse_version_catalog(path: Path, root: Path, text: str, facts: list[dict[st
             if coordinate:
                 version, certainty = catalog_version(version_value, versions)
                 add_fact(facts, kind="dependency.declared", name=coordinate, value=version, certainty=certainty,
-                         project_id="project:.", path=label, declaration_role="version-catalog", scope=f"alias:{alias}")
+                         project_id=project_id, path=label, declaration_role="version-catalog", scope=f"alias:{alias}")
     plugins = catalog.get("plugins", {})
     if isinstance(plugins, dict):
         for alias, value in sorted(plugins.items()):
@@ -492,7 +562,7 @@ def parse_version_catalog(path: Path, root: Path, text: str, facts: list[dict[st
             version, certainty = catalog_version(value.get("version"), versions)
             normalized_alias = str(alias).replace("-", ".").replace("_", ".")
             add_fact(facts, kind="plugin.version", name=str(value["id"]), value=version, certainty=certainty,
-                     project_id="project:.", path=label, declaration_role="version-catalog", scope=f"alias:{normalized_alias}")
+                     project_id=project_id, path=label, declaration_role="version-catalog", scope=f"alias:{normalized_alias}")
 
 
 def config_keys(path: Path, text: str) -> list[tuple[str, int]]:
@@ -517,11 +587,51 @@ def config_keys(path: Path, text: str) -> list[tuple[str, int]]:
 
 def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
     files, gaps = discover_files(root, max_files)
+    settings_text: dict[Path, str | None] = {}
+    gradle_settings: list[tuple[str, str, list[str]]] = []
+    for path in files:
+        if path.name not in {"settings.gradle", "settings.gradle.kts"}:
+            continue
+        text = read_text(path, root, max_file_bytes, gaps)
+        settings_text[path] = text
+        if text is not None:
+            project_path, module_ids = parse_gradle_settings(path, root, text, gaps)
+            gradle_settings.append((posix(path, root), project_path, module_ids))
+    descriptor_roots = {
+        path.parent for path in files if path.name in {"pom.xml", "build.gradle", "build.gradle.kts"}
+    }
+    settings_project_roots = {
+        absolute_from_posix(root, project_path)
+        for _, project_path, _ in gradle_settings
+    }
+    settings_module_roots = {
+        absolute_from_posix(root, module_id.removeprefix("project:"))
+        for _, _, module_ids in gradle_settings
+        for module_id in module_ids
+    }
+    project_roots = sorted(
+        descriptor_roots | settings_project_roots | settings_module_roots,
+        key=lambda path: (-len(path.relative_to(root).parts), posix(path, root)),
+    )
+    gradle_descriptor_roots = {
+        path.parent for path in files if path.name in {"build.gradle", "build.gradle.kts"}
+    }
+    standalone_gradle_roots = {
+        path for path in gradle_descriptor_roots
+        if nearest_ancestor(path, sorted(
+            settings_project_roots,
+            key=lambda item: (-len(item.relative_to(root).parts), posix(item, root)),
+        )) is None
+    }
+    gradle_build_roots = sorted(
+        settings_project_roots | standalone_gradle_roots,
+        key=lambda path: (-len(path.relative_to(root).parts), posix(path, root)),
+    )
     facts: list[dict[str, Any]] = []
     projects: list[dict[str, Any]] = []
     deployment: list[str] = []
     excluded: list[dict[str, str]] = []
-    gradle_settings: list[tuple[str, str, list[str]]] = []
+    gradle_plugin_applications: list[dict[str, Any]] = []
     for path in files:
         label = posix(path, root)
         if is_secret_path(path, root):
@@ -533,10 +643,10 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
         if name in {"Dockerfile", "compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml", "Chart.yaml"} or any(part in {"k8s", "kubernetes", "helm"} for part in path.parts):
             deployment.append(label)
             add_fact(facts, kind="deployment.signal", name=name, value="present", certainty="declared",
-                     project_id="project:.", path=label)
+                     project_id=project_id_for_path(path, root, project_roots), path=label)
         if not relevant:
             continue
-        text = read_text(path, root, max_file_bytes, gaps)
+        text = settings_text[path] if path in settings_text else read_text(path, root, max_file_bytes, gaps)
         if text is None:
             continue
         if name == "pom.xml":
@@ -544,27 +654,29 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
             if project:
                 projects.append(project)
         elif name in {"build.gradle", "build.gradle.kts"}:
-            projects.append(parse_gradle(path, root, text, facts))
+            projects.append(parse_gradle(path, root, text, facts, gradle_plugin_applications))
         elif name in {"settings.gradle", "settings.gradle.kts"}:
-            project_path, module_ids = parse_gradle_settings(path, root, text, gaps)
-            gradle_settings.append((label, project_path, module_ids))
+            pass
         elif name == "gradle-wrapper.properties":
             match = re.search(r"gradle-([0-9][^-/]*)-(?:bin|all)\.zip", text)
             if match:
                 add_fact(facts, kind="build-tool.version", name="gradle-wrapper", value=match.group(1),
-                         certainty="declared", project_id="project:.", path=label)
+                         certainty="declared", project_id=project_id_for_path(path, root, project_roots), path=label)
         elif name == "libs.versions.toml":
-            parse_version_catalog(path, root, text, facts, gaps)
+            parse_version_catalog(
+                path, root, text, facts, gaps, project_id_for_path(path, root, project_roots)
+            )
         elif suffix in CONFIG_SUFFIXES and (name.startswith("application") or name.startswith("bootstrap")):
             for key, line in config_keys(path, text):
                 add_fact(facts, kind="config.key", name=key, value="present", certainty="declared",
-                         project_id="project:.", path=label, line=line)
+                         project_id=project_id_for_path(path, root, project_roots), path=label, line=line)
         elif suffix in SOURCE_SUFFIXES:
             test_path = any(part in {"test", "testFixtures", "integrationTest"} for part in path.parts)
             for token in TEST_SIGNALS if test_path else SOURCE_SIGNALS:
                 for match in re.finditer(re.escape(token), text):
                     add_fact(facts, kind="test.signal" if test_path else "code.signal", name=token,
-                             value="present", certainty="declared", project_id="project:.", path=label,
+                             value="present", certainty="declared",
+                             project_id=project_id_for_path(path, root, project_roots), path=label,
                              line=text.count("\n", 0, match.start()) + 1)
     for descriptor, project_path, module_ids in gradle_settings:
         matching = [project for project in projects if project["build_system"] == "gradle" and project["path"] == project_path]
@@ -603,13 +715,53 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
     ]
     for applied in applied_aliases:
         for catalog in catalog_boot_plugins:
-            if catalog.get("scope") == f"alias:{applied['name']}":
+            applied_root = nearest_ancestor(
+                absolute_from_posix(root, applied["source"]["path"]), gradle_build_roots
+            )
+            catalog_root = nearest_ancestor(
+                absolute_from_posix(root, catalog["source"]["path"]), gradle_build_roots
+            )
+            if applied_root == catalog_root and catalog.get("scope") == f"alias:{applied['name']}":
                 add_fact(
                     facts, kind="platform.version", name="spring-boot", value=catalog["value"], certainty="inferred",
                     project_id=applied["project_id"], path=applied["source"]["path"],
                     line=applied["source"].get("line"), declaration_role="applied-version-catalog",
                     catalog_source=catalog["source"]["path"],
                 )
+    direct_boot_declarations = [
+        fact for fact in facts
+        if fact["kind"] == "plugin.version"
+        and fact["name"] == "org.springframework.boot"
+        and fact.get("declaration_role") == "gradle-plugin-block:apply-false"
+        and VERSION_LITERAL.fullmatch(fact["value"])
+    ]
+    for applied in gradle_plugin_applications:
+        if applied["plugin"] != "org.springframework.boot":
+            continue
+        application_parent = PurePosixPath(applied["path"]).parent
+        application_root = nearest_ancestor(
+            absolute_from_posix(root, applied["path"]), gradle_build_roots
+        )
+        candidates = [
+            fact for fact in direct_boot_declarations
+            if PurePosixPath(fact["source"]["path"]).parent in application_parent.parents
+            and nearest_ancestor(
+                absolute_from_posix(root, fact["source"]["path"]), gradle_build_roots
+            ) == application_root
+        ]
+        if not candidates:
+            continue
+        nearest_depth = max(len(PurePosixPath(fact["source"]["path"]).parent.parts) for fact in candidates)
+        for declaration in candidates:
+            declaration_parent = PurePosixPath(declaration["source"]["path"]).parent
+            if len(declaration_parent.parts) != nearest_depth:
+                continue
+            add_fact(
+                facts, kind="platform.version", name="spring-boot", value=declaration["value"],
+                certainty="inferred", project_id=applied["project_id"], path=applied["path"],
+                line=applied["line"], declaration_role="applied-root-plugin-declaration",
+                scope=f"declared-at:{declaration['source']['path']}",
+            )
     unique_facts: dict[str, dict[str, Any]] = {}
     for fact in facts:
         existing = unique_facts.get(fact["id"])

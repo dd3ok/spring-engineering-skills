@@ -51,7 +51,7 @@ def validate_contract() -> list[str]:
         review_always, review_policy = load_review_policy()
     except (OSError, ValueError, json.JSONDecodeError) as error:
         return [f"invalid review routing policy: {error}"]
-    review_root = skill_dirs.get("spring-best-practice-review")
+    review_root = skill_dirs.get("spring-engineering-review")
     if review_root is not None:
         skill_text = (review_root / "SKILL.md").read_text(encoding="utf-8")
         routed_refs = set(re.findall(r"`(references/[^`]+)`", skill_text))
@@ -145,7 +145,7 @@ def validate_contract() -> list[str]:
         overlap = set(refs) & set(forbidden_refs)
         if overlap:
             errors.append(f"{case_id} expects and forbids references: {', '.join(sorted(overlap))}")
-        if expected == "spring-best-practice-review":
+        if expected == "spring-engineering-review":
             if not isinstance(review_routes, list) or not review_routes or not all(
                 isinstance(value, str) and value for value in review_routes
             ):

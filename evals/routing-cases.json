@@ -2,7 +2,7 @@
   {
     "id": "broad-review",
     "prompt": "Review this Spring Boot service for production readiness before repository stack evidence has been inspected",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["production readiness"],
     "review_routes": ["broad"],
@@ -48,7 +48,7 @@
     "route_signals": ["Spring Boot 3.5 to 4.1 upgrade"],
     "expected_refs": ["references/upgrade-playbook.md", "references/official-sources.md"],
     "forbidden_refs": ["references/upgrade-plan.schema.json"],
-    "forbidden_skills": ["spring-best-practice-review"]
+    "forbidden_skills": ["spring-engineering-review"]
   },
   {
     "id": "upgrade-plan-schema-consumer",
@@ -67,7 +67,7 @@
     "activation_channel": "semantic",
     "route_signals": ["JFR", "latency regression"],
     "expected_refs": ["references/investigation-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review"]
+    "forbidden_skills": ["spring-engineering-review"]
   },
   {
     "id": "threat-model",
@@ -76,7 +76,7 @@
     "activation_channel": "semantic",
     "route_signals": ["trust boundaries", "attack paths"],
     "expected_refs": ["references/threat-model-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review", "spring-test-gap-planner"]
+    "forbidden_skills": ["spring-engineering-review", "spring-test-gap-planner"]
   },
   {
     "id": "test-gaps",
@@ -85,7 +85,7 @@
     "activation_channel": "semantic",
     "route_signals": ["unverified test coverage"],
     "expected_refs": ["references/test-gap-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review", "spring-security-threat-modeler"]
+    "forbidden_skills": ["spring-engineering-review", "spring-security-threat-modeler"]
   },
   {
     "id": "modulith-audit",
@@ -94,14 +94,14 @@
     "activation_channel": "semantic",
     "route_signals": ["ApplicationModules", "cycles"],
     "expected_refs": ["references/modulith-audit-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review"]
+    "forbidden_skills": ["spring-engineering-review"]
   },
   {
-    "id": "explicit-best-practice-review",
-    "prompt": "Use spring-best-practice-review to review these MVC security rules",
-    "expected_skill": "spring-best-practice-review",
+    "id": "explicit-engineering-review",
+    "prompt": "Use spring-engineering-review to review these MVC security rules",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "explicit-name",
-    "route_signals": ["spring-best-practice-review", "MVC security"],
+    "route_signals": ["spring-engineering-review", "MVC security"],
     "review_routes": ["web"],
     "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md"],
     "forbidden_skills": []
@@ -169,12 +169,12 @@
     "activation_channel": "none",
     "route_signals": [],
     "expected_refs": [],
-    "forbidden_skills": ["spring-best-practice-review", "spring-evidence-collector", "spring-upgrade-planner", "spring-performance-investigator", "spring-security-threat-modeler", "spring-test-gap-planner", "spring-modulith-auditor"]
+    "forbidden_skills": ["spring-engineering-review", "spring-evidence-collector", "spring-upgrade-planner", "spring-performance-investigator", "spring-security-threat-modeler", "spring-test-gap-planner", "spring-modulith-auditor"]
   },
   {
     "id": "static-cache-review-not-performance-investigation",
     "prompt": "Review this cache configuration from source only; there are no runtime artifacts",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["cache configuration"],
     "review_routes": ["redis"],
@@ -185,7 +185,7 @@
   {
     "id": "narrow-web-security-review",
     "prompt": "Review the Spring Security authorization rules for this MVC API",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["Spring Security", "MVC API"],
     "review_routes": ["web"],
@@ -196,7 +196,7 @@
   {
     "id": "narrow-outbound-webclient-review",
     "prompt": "Review this outbound WebClient for SSRF controls and request deadlines",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["outbound WebClient", "SSRF", "request deadlines"],
     "review_routes": ["http-client"],
@@ -207,7 +207,7 @@
   {
     "id": "narrow-transaction-data-review",
     "prompt": "Review these JPA transaction boundaries and N+1 query risks",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["JPA transaction", "N+1"],
     "review_routes": ["transaction-data"],
@@ -218,7 +218,7 @@
   {
     "id": "narrow-kafka-review",
     "prompt": "Review this Kafka consumer retry, ordering, and acknowledgement design",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["Kafka consumer", "ordering"],
     "review_routes": ["kafka"],
@@ -229,7 +229,7 @@
   {
     "id": "narrow-architecture-operations-review",
     "prompt": "Review dependency governance, observability, and production operations for this Spring service",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["dependency governance", "observability"],
     "review_routes": ["architecture-operations"],
@@ -240,7 +240,7 @@
   {
     "id": "broad-http-review-loads-focused-reference",
     "prompt": "Perform a full production review including WebClient deadlines and outbound SSRF controls",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["full production review", "WebClient"],
     "review_routes": ["broad", "http-client"],
@@ -251,7 +251,7 @@
   {
     "id": "broad-review-with-kafka-evidence-loads-kafka",
     "prompt": "Perform a full production review of this Spring service with Kafka consumers",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["full production review", "Kafka consumers"],
     "review_routes": ["broad", "kafka"],
@@ -261,7 +261,7 @@
   {
     "id": "broad-review-with-repository-kafka-signal-loads-kafka",
     "prompt": "Perform a full production review; repository evidence contains spring-kafka and listener containers",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["full production review", "repository evidence", "spring-kafka"],
     "review_routes": ["broad", "kafka"],
@@ -271,7 +271,7 @@
   {
     "id": "existing-migration-claim-review-not-plan",
     "prompt": "Review this existing migration proposal and verify its compatibility claims",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["existing migration proposal", "compatibility claims"],
     "review_routes": ["migration", "version-spring"],
@@ -281,7 +281,7 @@
   {
     "id": "broad-versioned-redis-review-is-additive",
     "prompt": "Perform a full review of our version-specific Redis cache and distributed lock behavior",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["full review", "Redis", "version-specific"],
     "review_routes": ["broad", "redis", "version-messaging"],
@@ -292,7 +292,7 @@
   {
     "id": "versioned-spring-ai-review-loads-specialized-sources",
     "prompt": "Review this Spring AI ChatClient implementation against its exact deployed version",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["Spring AI", "exact deployed version"],
     "review_routes": ["spring-ai", "version-specialized"],
@@ -303,7 +303,7 @@
   {
     "id": "narrow-spring-batch-review",
     "prompt": "Review this Spring Batch chunk and restartability design without version claims",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["Spring Batch", "restartability"],
     "review_routes": ["spring-batch"],
@@ -314,7 +314,7 @@
   {
     "id": "narrow-api-protocol-review",
     "prompt": "Review this gRPC authorization and deadline design without version claims",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["gRPC", "deadline"],
     "review_routes": ["api-protocol"],
@@ -325,7 +325,7 @@
   {
     "id": "narrow-extended-data-access-review",
     "prompt": "Review this jOOQ transaction and mapping design without version claims",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["jOOQ", "mapping design"],
     "review_routes": ["transaction-data", "extended-data-access"],
@@ -336,7 +336,7 @@
   {
     "id": "narrow-static-performance-review",
     "prompt": "Review source-only pool and queue capacity risks without runtime artifacts",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["source-only", "capacity risks"],
     "review_routes": ["static-performance"],
@@ -347,7 +347,7 @@
   {
     "id": "versioned-jdk-scheduling-review-loads-operations-sources",
     "prompt": "Review our Spring Boot virtual-thread scheduling configuration against JDK 25 behavior",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["virtual-thread scheduling", "JDK 25"],
     "review_routes": ["scheduling", "version-operations"],
@@ -358,7 +358,7 @@
   {
     "id": "versioned-rabbitmq-review-loads-messaging-sources",
     "prompt": "Review this RabbitMQ permission and acknowledgement design against the deployed broker version",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["RabbitMQ", "deployed broker version"],
     "review_routes": ["messaging", "version-messaging"],
@@ -369,7 +369,7 @@
   {
     "id": "versioned-pulsar-review-loads-messaging-sources",
     "prompt": "Review Pulsar tenant authorization against our exact broker and client versions",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["Pulsar", "exact broker and client versions"],
     "review_routes": ["messaging", "version-messaging"],
@@ -380,7 +380,7 @@
   {
     "id": "versioned-postgresql-review-loads-data-sources",
     "prompt": "Review PostgreSQL 18 row-level security and JDBC pooling for this Spring service",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["PostgreSQL 18", "row-level security"],
     "review_routes": ["transaction-data", "postgresql", "version-data"],
@@ -432,12 +432,12 @@
     "route_signals": ["빌드를 실행하지 않고", "정적 inventory"],
     "expected_refs": ["references/evidence-contract.md"],
     "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review", "spring-upgrade-planner"]
+    "forbidden_skills": ["spring-engineering-review", "spring-upgrade-planner"]
   },
   {
     "id": "korean-broad-review",
     "prompt": "이 Spring 서비스의 운영 준비 상태를 저장소 근거 기반으로 종합 검토해줘",
-    "expected_skill": "spring-best-practice-review",
+    "expected_skill": "spring-engineering-review",
     "activation_channel": "semantic",
     "route_signals": ["운영 준비 상태", "종합 검토"],
     "review_routes": ["broad"],
@@ -452,7 +452,7 @@
     "activation_channel": "semantic",
     "route_signals": ["JFR", "latency regression"],
     "expected_refs": ["references/investigation-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review"]
+    "forbidden_skills": ["spring-engineering-review"]
   },
   {
     "id": "korean-threat-model",
@@ -461,7 +461,7 @@
     "activation_channel": "semantic",
     "route_signals": ["신뢰 경계", "공격 경로"],
     "expected_refs": ["references/threat-model-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review", "spring-test-gap-planner"]
+    "forbidden_skills": ["spring-engineering-review", "spring-test-gap-planner"]
   },
   {
     "id": "korean-compound-evidence-first",
@@ -471,7 +471,7 @@
     "route_signals": ["먼저", "버전 근거", "운영 검토"],
     "expected_refs": ["references/evidence-contract.md"],
     "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review", "spring-upgrade-planner"]
+    "forbidden_skills": ["spring-engineering-review", "spring-upgrade-planner"]
   },
   {
     "id": "korean-ordinary-spring-question",
@@ -480,7 +480,7 @@
     "activation_channel": "none",
     "route_signals": [],
     "expected_refs": [],
-    "forbidden_skills": ["spring-best-practice-review", "spring-evidence-collector", "spring-upgrade-planner"]
+    "forbidden_skills": ["spring-engineering-review", "spring-evidence-collector", "spring-upgrade-planner"]
   },
   {
     "id": "mixed-language-cve-lookup",
@@ -489,7 +489,7 @@
     "activation_channel": "none",
     "route_signals": [],
     "expected_refs": [],
-    "forbidden_skills": ["spring-security-threat-modeler", "spring-best-practice-review"]
+    "forbidden_skills": ["spring-security-threat-modeler", "spring-engineering-review"]
   },
   {
     "id": "korean-modulith-audit",
@@ -498,6 +498,6 @@
     "activation_channel": "semantic",
     "route_signals": ["ApplicationModules", "순환 의존"],
     "expected_refs": ["references/modulith-audit-playbook.md", "references/official-sources.md"],
-    "forbidden_skills": ["spring-best-practice-review"]
+    "forbidden_skills": ["spring-engineering-review"]
   }
 ]

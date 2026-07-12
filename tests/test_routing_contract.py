@@ -99,7 +99,7 @@ class RoutingContractTests(unittest.TestCase):
         self.assertTrue(any("review routing policy" in error for error in errors))
 
     def test_review_policy_covers_every_direct_skill_reference(self) -> None:
-        root = ROOT / "skills" / "spring-best-practice-review"
+        root = ROOT / "skills" / "spring-engineering-review"
         skill_refs = set(re.findall(r"`(references/[^`]+)`", (root / "SKILL.md").read_text(encoding="utf-8")))
         always, routes = validate_routing_contract.load_review_policy()
         policy_refs = set(always)
@@ -112,7 +112,7 @@ class RoutingContractTests(unittest.TestCase):
         covered = {
             route
             for case in cases
-            if case.get("expected_skill") == "spring-best-practice-review"
+            if case.get("expected_skill") == "spring-engineering-review"
             for route in case.get("review_routes", [])
         }
         _, routes = validate_routing_contract.load_review_policy()

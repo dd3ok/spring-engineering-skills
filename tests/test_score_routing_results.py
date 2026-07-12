@@ -19,7 +19,7 @@ class ScoreRoutingResultsTests(unittest.TestCase):
             {
                 "id": "semantic-review",
                 "prompt": "Review this Spring service",
-                "expected_skill": "spring-best-practice-review",
+                "expected_skill": "spring-engineering-review",
                 "activation_channel": "semantic",
             },
             {
@@ -42,7 +42,7 @@ class ScoreRoutingResultsTests(unittest.TestCase):
         results = [
             {
                 "case_id": "semantic-review",
-                "selected_skill": "spring-best-practice-review",
+                "selected_skill": "spring-engineering-review",
                 "handoff_skills": ["spring-test-gap-planner"],
             },
             {"case_id": "ordinary-question", "selected_skill": None},
@@ -58,7 +58,7 @@ class ScoreRoutingResultsTests(unittest.TestCase):
     def test_wrong_and_false_activation_routes_are_measured(self) -> None:
         results = [
             {"case_id": "semantic-review", "selected_skill": "spring-test-gap-planner"},
-            {"case_id": "ordinary-question", "selected_skill": "spring-best-practice-review"},
+            {"case_id": "ordinary-question", "selected_skill": "spring-engineering-review"},
         ]
         report, errors = score_routing_results.score_results(self.cases, results)
         self.assertEqual(errors, [])
@@ -70,14 +70,39 @@ class ScoreRoutingResultsTests(unittest.TestCase):
 
     def test_duplicate_unknown_and_missing_results_are_rejected(self) -> None:
         results = [
-            {"case_id": "semantic-review", "selected_skill": "spring-best-practice-review"},
-            {"case_id": "semantic-review", "selected_skill": "spring-best-practice-review"},
+            {"case_id": "semantic-review", "selected_skill": "spring-engineering-review"},
+            {"case_id": "semantic-review", "selected_skill": "spring-engineering-review"},
             {"case_id": "unknown", "selected_skill": None},
         ]
         _, errors = score_routing_results.score_results(self.cases, results)
         self.assertTrue(any("duplicate routing result" in error for error in errors))
         self.assertTrue(any("unknown routing case" in error for error in errors))
         self.assertTrue(any("missing routing results" in error for error in errors))
+
+    def test_published_route_label_smoke_summary_matches_records(self) -> None:
+        observation = json.loads(
+            (ROOT / "evals" / "route-label-smoke-2026-07-12.json").read_text(encoding="utf-8")
+        )
+        initial = [item for item in observation["results"] if item["id"].startswith("route-")]
+        post_description = [
+            item for item in observation["results"] if item["id"].startswith("post-description-")
+        ]
+        summary = observation["summary"]
+        self.assertEqual(summary["initial_evaluated"], len(initial))
+        self.assertEqual(summary["initial_matching_labels"], sum(
+            item["expected"] == item["observed"] for item in initial
+        ))
+        self.assertEqual(summary["single_skill"], sum(len(item["expected"]) == 1 for item in initial))
+        self.assertEqual(summary["non_activation"], sum(not item["expected"] for item in initial))
+        self.assertEqual(summary["compound_handoff"], sum(len(item["expected"]) > 1 for item in initial))
+        self.assertEqual(summary["post_description_checks"], len(post_description))
+        self.assertEqual(summary["post_description_matching_labels"], sum(
+            item["expected"] == item["observed"] for item in post_description
+        ))
+        self.assertEqual(summary["total_evaluated"], len(observation["results"]))
+        self.assertEqual(summary["total_matching_labels"], sum(
+            item["expected"] == item["observed"] for item in observation["results"]
+        ))
 
 
 if __name__ == "__main__":
