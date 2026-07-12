@@ -15,6 +15,18 @@ import validate_all  # noqa: E402
 
 
 class ValidateAllTests(unittest.TestCase):
+    def test_ci_workflow_is_minimal_pinned_and_offline(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "validate.yml").read_text(encoding="utf-8")
+        self.assertIn("name: validate", workflow)
+        self.assertIn("python scripts/validate_all.py", workflow)
+        self.assertIn("python -m ruff check scripts tests skills", workflow)
+        self.assertNotIn("check_links.py --online", workflow)
+        self.assertNotIn("matrix:", workflow)
+        action_lines = [line.strip() for line in workflow.splitlines() if "uses:" in line]
+        self.assertTrue(action_lines)
+        for line in action_lines:
+            self.assertRegex(line, r"uses: [^@]+@[0-9a-f]{40}(?:\s+#.*)?$")
+
     def test_command_set_covers_every_repository_check(self) -> None:
         commands = validate_all.validation_commands("python-test")
         flattened = [" ".join(command) for _, command in commands]
