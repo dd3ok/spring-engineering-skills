@@ -1,0 +1,427 @@
+[
+  {
+    "id": "broad-review",
+    "prompt": "Review this Spring Boot service for production readiness before repository stack evidence has been inspected",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["production readiness"],
+    "review_routes": ["broad"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md"],
+    "forbidden_refs": ["references/kafka-rules.md"],
+    "forbidden_skills": ["spring-evidence-collector"]
+  },
+  {
+    "id": "static-evidence",
+    "prompt": "Collect a redacted static repository inventory without running the build",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["repository inventory"],
+    "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "evidence-schema-consumer",
+    "prompt": "Implement a consumer for spring-evidence/1 JSON using its schema",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["spring-evidence/1", "consumer", "schema"],
+    "expected_refs": ["references/evidence-contract.md", "references/evidence.schema.json"],
+    "forbidden_refs": ["references/official-sources.md"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "evidence-build-interpretation",
+    "prompt": "Interpret Maven and Spring Boot version evidence in this evidence pack",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["Maven", "Spring Boot", "evidence pack"],
+    "expected_refs": ["references/evidence-contract.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/evidence.schema.json"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "boot-upgrade",
+    "prompt": "Plan our Spring Boot 3.5 to 4.1 upgrade in reversible stages",
+    "expected_skill": "spring-upgrade-planner",
+    "activation_channel": "semantic",
+    "route_signals": ["Spring Boot 3.5 to 4.1 upgrade"],
+    "expected_refs": ["references/upgrade-playbook.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/upgrade-plan.schema.json"],
+    "forbidden_skills": ["spring-best-practice-review"]
+  },
+  {
+    "id": "upgrade-plan-schema-consumer",
+    "prompt": "Implement a consumer for spring-upgrade-plan/2 JSON using its schema",
+    "expected_skill": "spring-upgrade-planner",
+    "activation_channel": "semantic",
+    "route_signals": ["spring-upgrade-plan/2", "consumer", "schema"],
+    "expected_refs": ["references/upgrade-playbook.md", "references/upgrade-plan.schema.json"],
+    "forbidden_refs": ["references/official-sources.md"],
+    "forbidden_skills": ["spring-evidence-collector"]
+  },
+  {
+    "id": "runtime-performance",
+    "prompt": "Correlate JFR and Micrometer data for the latency regression",
+    "expected_skill": "spring-performance-investigator",
+    "activation_channel": "semantic",
+    "route_signals": ["JFR", "latency regression"],
+    "expected_refs": ["references/investigation-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review"]
+  },
+  {
+    "id": "threat-model",
+    "prompt": "Model trust boundaries and attack paths for this multi-tenant API",
+    "expected_skill": "spring-security-threat-modeler",
+    "activation_channel": "semantic",
+    "route_signals": ["trust boundaries", "attack paths"],
+    "expected_refs": ["references/threat-model-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review", "spring-test-gap-planner"]
+  },
+  {
+    "id": "test-gaps",
+    "prompt": "Map transaction and broker failure modes to unverified test coverage",
+    "expected_skill": "spring-test-gap-planner",
+    "activation_channel": "semantic",
+    "route_signals": ["unverified test coverage"],
+    "expected_refs": ["references/test-gap-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review", "spring-security-threat-modeler"]
+  },
+  {
+    "id": "modulith-audit",
+    "prompt": "Audit ApplicationModules boundaries and cycles",
+    "expected_skill": "spring-modulith-auditor",
+    "activation_channel": "semantic",
+    "route_signals": ["ApplicationModules", "cycles"],
+    "expected_refs": ["references/modulith-audit-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review"]
+  },
+  {
+    "id": "explicit-best-practice-review",
+    "prompt": "Use spring-best-practice-review to review these MVC security rules",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-best-practice-review", "MVC security"],
+    "review_routes": ["web"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-evidence-collector",
+    "prompt": "Use spring-evidence-collector for a static repository inventory",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-evidence-collector", "static repository inventory"],
+    "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-upgrade-planner",
+    "prompt": "Use spring-upgrade-planner for this staged Boot upgrade",
+    "expected_skill": "spring-upgrade-planner",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-upgrade-planner", "staged Boot upgrade"],
+    "expected_refs": ["references/upgrade-playbook.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/upgrade-plan.schema.json"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-performance-investigator",
+    "prompt": "Use spring-performance-investigator to diagnose this JFR latency regression",
+    "expected_skill": "spring-performance-investigator",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-performance-investigator", "JFR latency regression"],
+    "expected_refs": ["references/investigation-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-threat-modeler",
+    "prompt": "Use spring-security-threat-modeler for these trust boundaries",
+    "expected_skill": "spring-security-threat-modeler",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-security-threat-modeler", "trust boundaries"],
+    "expected_refs": ["references/threat-model-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-test-gap-planner",
+    "prompt": "Use spring-test-gap-planner to produce a risk-ranked test backlog",
+    "expected_skill": "spring-test-gap-planner",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-test-gap-planner", "risk-ranked test backlog"],
+    "expected_refs": ["references/test-gap-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "explicit-modulith-auditor",
+    "prompt": "Use spring-modulith-auditor to verify ApplicationModules boundaries",
+    "expected_skill": "spring-modulith-auditor",
+    "activation_channel": "explicit-name",
+    "route_signals": ["spring-modulith-auditor", "ApplicationModules boundaries"],
+    "expected_refs": ["references/modulith-audit-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": []
+  },
+  {
+    "id": "ordinary-spring-question",
+    "prompt": "Explain how @Transactional works in Spring",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-best-practice-review", "spring-evidence-collector", "spring-upgrade-planner", "spring-performance-investigator", "spring-security-threat-modeler", "spring-test-gap-planner", "spring-modulith-auditor"]
+  },
+  {
+    "id": "static-cache-review-not-performance-investigation",
+    "prompt": "Review this cache configuration from source only; there are no runtime artifacts",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["cache configuration"],
+    "review_routes": ["redis"],
+    "expected_refs": ["references/core-review-rules.md", "references/redis-rules.md"],
+    "forbidden_refs": ["references/messaging-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "narrow-web-security-review",
+    "prompt": "Review the Spring Security authorization rules for this MVC API",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["Spring Security", "MVC API"],
+    "review_routes": ["web"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md"],
+    "forbidden_refs": ["references/transaction-data-rules.md", "references/kafka-rules.md", "references/architecture-operations-rules.md", "references/spring-core-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "narrow-outbound-webclient-review",
+    "prompt": "Review this outbound WebClient for SSRF controls and request deadlines",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["outbound WebClient", "SSRF", "request deadlines"],
+    "review_routes": ["http-client"],
+    "expected_refs": ["references/core-review-rules.md", "references/http-client-rules.md"],
+    "forbidden_refs": ["references/web-security-rules.md", "references/architecture-operations-rules.md", "references/spring-core-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler", "spring-performance-investigator"]
+  },
+  {
+    "id": "narrow-transaction-data-review",
+    "prompt": "Review these JPA transaction boundaries and N+1 query risks",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["JPA transaction", "N+1"],
+    "review_routes": ["transaction-data"],
+    "expected_refs": ["references/core-review-rules.md", "references/transaction-data-rules.md"],
+    "forbidden_refs": ["references/web-security-rules.md", "references/kafka-rules.md", "references/architecture-operations-rules.md", "references/data-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "narrow-kafka-review",
+    "prompt": "Review this Kafka consumer retry, ordering, and acknowledgement design",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["Kafka consumer", "ordering"],
+    "review_routes": ["kafka"],
+    "expected_refs": ["references/core-review-rules.md", "references/kafka-rules.md"],
+    "forbidden_refs": ["references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md", "references/messaging-sources.md"],
+    "forbidden_skills": ["spring-test-gap-planner"]
+  },
+  {
+    "id": "narrow-architecture-operations-review",
+    "prompt": "Review dependency governance, observability, and production operations for this Spring service",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["dependency governance", "observability"],
+    "review_routes": ["architecture-operations"],
+    "expected_refs": ["references/core-review-rules.md", "references/architecture-operations-rules.md"],
+    "forbidden_refs": ["references/web-security-rules.md", "references/transaction-data-rules.md", "references/kafka-rules.md", "references/operations-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "broad-http-review-loads-focused-reference",
+    "prompt": "Perform a full production review including WebClient deadlines and outbound SSRF controls",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["full production review", "WebClient"],
+    "review_routes": ["broad", "http-client"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md", "references/http-client-rules.md"],
+    "forbidden_refs": ["references/kafka-rules.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "broad-review-with-kafka-evidence-loads-kafka",
+    "prompt": "Perform a full production review of this Spring service with Kafka consumers",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["full production review", "Kafka consumers"],
+    "review_routes": ["broad", "kafka"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md", "references/kafka-rules.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "broad-review-with-repository-kafka-signal-loads-kafka",
+    "prompt": "Perform a full production review; repository evidence contains spring-kafka and listener containers",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["full production review", "repository evidence", "spring-kafka"],
+    "review_routes": ["broad", "kafka"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md", "references/kafka-rules.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "existing-migration-claim-review-not-plan",
+    "prompt": "Review this existing migration proposal and verify its compatibility claims",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["existing migration proposal", "compatibility claims"],
+    "review_routes": ["migration", "version-spring"],
+    "expected_refs": ["references/core-review-rules.md", "references/migration-rules.md", "references/spring-core-sources.md"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "broad-versioned-redis-review-is-additive",
+    "prompt": "Perform a full review of our version-specific Redis cache and distributed lock behavior",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["full review", "Redis", "version-specific"],
+    "review_routes": ["broad", "redis", "version-messaging"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md", "references/redis-rules.md", "references/messaging-sources.md"],
+    "forbidden_refs": ["references/kafka-rules.md", "references/data-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "versioned-spring-ai-review-loads-specialized-sources",
+    "prompt": "Review this Spring AI ChatClient implementation against its exact deployed version",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["Spring AI", "exact deployed version"],
+    "review_routes": ["spring-ai", "version-specialized"],
+    "expected_refs": ["references/core-review-rules.md", "references/spring-ai-rules.md", "references/specialized-sources.md"],
+    "forbidden_refs": ["references/data-sources.md", "references/messaging-sources.md", "references/operations-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "narrow-spring-batch-review",
+    "prompt": "Review this Spring Batch chunk and restartability design without version claims",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["Spring Batch", "restartability"],
+    "review_routes": ["spring-batch"],
+    "expected_refs": ["references/core-review-rules.md", "references/spring-batch-rules.md"],
+    "forbidden_refs": ["references/specialized-sources.md"],
+    "forbidden_skills": ["spring-test-gap-planner"]
+  },
+  {
+    "id": "narrow-api-protocol-review",
+    "prompt": "Review this gRPC authorization and deadline design without version claims",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["gRPC", "deadline"],
+    "review_routes": ["api-protocol"],
+    "expected_refs": ["references/core-review-rules.md", "references/api-protocol-rules.md"],
+    "forbidden_refs": ["references/specialized-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "narrow-extended-data-access-review",
+    "prompt": "Review this jOOQ transaction and mapping design without version claims",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["jOOQ", "mapping design"],
+    "review_routes": ["transaction-data", "extended-data-access"],
+    "expected_refs": ["references/core-review-rules.md", "references/transaction-data-rules.md", "references/data-access-rules.md"],
+    "forbidden_refs": ["references/data-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "narrow-static-performance-review",
+    "prompt": "Review source-only pool and queue capacity risks without runtime artifacts",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["source-only", "capacity risks"],
+    "review_routes": ["static-performance"],
+    "expected_refs": ["references/core-review-rules.md", "references/performance-rules.md"],
+    "forbidden_refs": ["references/operations-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "versioned-jdk-scheduling-review-loads-operations-sources",
+    "prompt": "Review our Spring Boot virtual-thread scheduling configuration against JDK 25 behavior",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["virtual-thread scheduling", "JDK 25"],
+    "review_routes": ["scheduling", "version-operations"],
+    "expected_refs": ["references/core-review-rules.md", "references/scheduling-rules.md", "references/operations-sources.md"],
+    "forbidden_refs": ["references/data-sources.md", "references/messaging-sources.md", "references/specialized-sources.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "versioned-rabbitmq-review-loads-messaging-sources",
+    "prompt": "Review this RabbitMQ permission and acknowledgement design against the deployed broker version",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["RabbitMQ", "deployed broker version"],
+    "review_routes": ["messaging", "version-messaging"],
+    "expected_refs": ["references/core-review-rules.md", "references/messaging-rules.md", "references/messaging-sources.md"],
+    "forbidden_refs": ["references/data-sources.md"],
+    "forbidden_skills": ["spring-test-gap-planner"]
+  },
+  {
+    "id": "versioned-pulsar-review-loads-messaging-sources",
+    "prompt": "Review Pulsar tenant authorization against our exact broker and client versions",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["Pulsar", "exact broker and client versions"],
+    "review_routes": ["messaging", "version-messaging"],
+    "expected_refs": ["references/core-review-rules.md", "references/messaging-rules.md", "references/messaging-sources.md"],
+    "forbidden_refs": ["references/data-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "versioned-postgresql-review-loads-data-sources",
+    "prompt": "Review PostgreSQL 18 row-level security and JDBC pooling for this Spring service",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["PostgreSQL 18", "row-level security"],
+    "review_routes": ["transaction-data", "postgresql", "version-data"],
+    "expected_refs": ["references/core-review-rules.md", "references/transaction-data-rules.md", "references/postgresql-rules.md", "references/data-sources.md"],
+    "forbidden_refs": ["references/messaging-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "failing-test-debug-not-gap-plan",
+    "prompt": "Debug this single failing JUnit assertion and implement the fix",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-test-gap-planner"]
+  },
+  {
+    "id": "cve-triage-not-threat-model",
+    "prompt": "Look up whether this library version has a published CVE and patch it",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "authorized-penetration-test-not-threat-model",
+    "prompt": "Run an authorized penetration test with exploit probes against the staging API",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "microservice-decomposition-not-modulith",
+    "prompt": "Choose whether these two independently deployed services should be merged",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-modulith-auditor"]
+  }
+]
