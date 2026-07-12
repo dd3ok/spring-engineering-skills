@@ -423,5 +423,81 @@
     "route_signals": [],
     "expected_refs": [],
     "forbidden_skills": ["spring-modulith-auditor"]
+  },
+  {
+    "id": "korean-static-evidence",
+    "prompt": "빌드를 실행하지 않고 이 Spring 저장소의 정적 inventory를 안전하게 수집해줘",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["빌드를 실행하지 않고", "정적 inventory"],
+    "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review", "spring-upgrade-planner"]
+  },
+  {
+    "id": "korean-broad-review",
+    "prompt": "이 Spring 서비스의 운영 준비 상태를 저장소 근거 기반으로 종합 검토해줘",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["운영 준비 상태", "종합 검토"],
+    "review_routes": ["broad"],
+    "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md", "references/transaction-data-rules.md", "references/architecture-operations-rules.md"],
+    "forbidden_refs": ["references/kafka-rules.md"],
+    "forbidden_skills": ["spring-performance-investigator"]
+  },
+  {
+    "id": "mixed-language-performance",
+    "prompt": "JFR과 Micrometer 데이터를 연결해서 이 latency regression의 원인을 조사해줘",
+    "expected_skill": "spring-performance-investigator",
+    "activation_channel": "semantic",
+    "route_signals": ["JFR", "latency regression"],
+    "expected_refs": ["references/investigation-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review"]
+  },
+  {
+    "id": "korean-threat-model",
+    "prompt": "멀티테넌트 API의 신뢰 경계와 주요 공격 경로를 모델링해줘",
+    "expected_skill": "spring-security-threat-modeler",
+    "activation_channel": "semantic",
+    "route_signals": ["신뢰 경계", "공격 경로"],
+    "expected_refs": ["references/threat-model-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review", "spring-test-gap-planner"]
+  },
+  {
+    "id": "korean-compound-evidence-first",
+    "prompt": "먼저 빌드를 실행하지 않고 Spring Boot와 Gradle 버전 근거를 수집한 다음 운영 검토를 준비해줘",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["먼저", "버전 근거", "운영 검토"],
+    "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review", "spring-upgrade-planner"]
+  },
+  {
+    "id": "korean-ordinary-spring-question",
+    "prompt": "Spring에서 생성자 주입이 어떻게 동작하는지 설명해줘",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-best-practice-review", "spring-evidence-collector", "spring-upgrade-planner"]
+  },
+  {
+    "id": "mixed-language-cve-lookup",
+    "prompt": "이 Spring dependency 버전에 공개된 CVE가 있는지 lookup하고 패치 버전만 알려줘",
+    "expected_skill": null,
+    "activation_channel": "none",
+    "route_signals": [],
+    "expected_refs": [],
+    "forbidden_skills": ["spring-security-threat-modeler", "spring-best-practice-review"]
+  },
+  {
+    "id": "korean-modulith-audit",
+    "prompt": "ApplicationModules 경계와 순환 의존을 감사하고 위반 모듈을 정리해줘",
+    "expected_skill": "spring-modulith-auditor",
+    "activation_channel": "semantic",
+    "route_signals": ["ApplicationModules", "순환 의존"],
+    "expected_refs": ["references/modulith-audit-playbook.md", "references/official-sources.md"],
+    "forbidden_skills": ["spring-best-practice-review"]
   }
 ]
