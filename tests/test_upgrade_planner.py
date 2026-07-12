@@ -4,6 +4,9 @@ import copy
 import importlib.util
 import hashlib
 import json
+import re
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import UTC, datetime
@@ -11,6 +14,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+UPGRADE_SCRIPTS = ROOT / "skills" / "spring-upgrade-planner" / "scripts"
+sys.path.insert(0, str(UPGRADE_SCRIPTS))
 
 
 def load_module(name: str, path: Path):
@@ -32,6 +37,22 @@ validator = load_module(
 
 
 class UpgradePlannerTests(unittest.TestCase):
+    def test_published_schema_constrains_core_plan_structures(self) -> None:
+        schema = json.loads(
+            (ROOT / "skills" / "spring-upgrade-planner" / "references" / "upgrade-plan.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        properties = schema["properties"]
+        self.assertEqual(properties["current"]["properties"]["evidence_ids"]["$ref"], "#/$defs/evidenceIds")
+        self.assertIn("spring_boot", properties["current"]["properties"])
+        self.assertEqual(properties["target"]["properties"]["prerelease_allowed"]["type"], "boolean")
+        self.assertEqual(properties["compatibility_gates"]["items"]["$ref"], "#/$defs/gate")
+        self.assertEqual(properties["hops"]["items"]["$ref"], "#/$defs/hop")
+        self.assertIsNotNone(re.fullmatch(schema["$defs"]["springVersion"]["pattern"], "4.1.0-rc1"))
+        self.assertIsNotNone(re.fullmatch(schema["$defs"]["cloudVersion"]["pattern"], "2025.1.1.1"))
+        self.assertFalse(schema["additionalProperties"])
+
     def test_python_runtime_floor_is_enforced(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Python 3.12"):
             validator.require_supported_python((3, 11))
@@ -40,7 +61,7 @@ class UpgradePlannerTests(unittest.TestCase):
     def test_invalid_static_execution_flags_are_rejected(self) -> None:
         evidence = {
             "schema_version": "spring-evidence/1", "repository": {"root": "."},
-            "collection": {"mode": "static", "network_used": True, "build_executed": True},
+            "collection": {"collector_version": "test", "mode": "static", "network_used": True, "build_executed": True, "provenance": None},
             "projects": [], "facts": [], "conflicts": [], "gaps": [],
             "redaction": {"configuration_values_omitted": True, "environment_read": False},
         }
@@ -68,11 +89,12 @@ class UpgradePlannerTests(unittest.TestCase):
         self.assertTrue(any("conflicts" in error for error in builder.validate_evidence_input(evidence)))
 
     def test_empty_source_id_is_rejected(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            evidence = self.evidence_file(root, [])
-            with self.assertRaisesRegex(ValueError, "source ids"):
-                builder.build(evidence, "4.1.0", False, [""], False)
+        for source_id in ("", "source:"):
+            with self.subTest(source_id=source_id), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                evidence = self.evidence_file(root, [])
+                with self.assertRaisesRegex(ValueError, "source ids"):
+                    builder.build(evidence, "4.1.0", False, [source_id], False)
 
     def test_extreme_version_is_a_validation_error_not_an_exception(self) -> None:
         plan = {"schema_version": "spring-upgrade-plan/2", "status": "draft", "target": {"spring_boot": "9" * 5000 + ".0.0"}}
@@ -132,6 +154,14 @@ class UpgradePlannerTests(unittest.TestCase):
                 mutate(plan)
                 self.assertIsInstance(validator.validate(plan, root), list)
 
+        evidence = {
+            "schema_version": "spring-evidence/1", "repository": {"root": "."},
+            "collection": {"collector_version": "test", "mode": [], "network_used": False, "build_executed": False, "provenance": None},
+            "projects": [], "facts": [], "conflicts": [], "gaps": [],
+            "redaction": {"configuration_values_omitted": True, "environment_read": False},
+        }
+        self.assertIsInstance(builder.validate_evidence_input(evidence), list)
+
     def test_non_list_gate_source_ids_return_errors_instead_of_crashing(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -159,6 +189,14 @@ class UpgradePlannerTests(unittest.TestCase):
             "/spring-projects/spring-boot/wiki/Unrelated",
         ):
             self.assertFalse(validator.approved_publisher_path("spring-github", "github.com", path, "release-notes"))
+        self.assertTrue(
+            validator.approved_publisher_path(
+                "spring-github",
+                "github.com",
+                "/spring-cloud/spring-cloud-release/wiki/Spring-Cloud-2025.1-Release-Notes",
+                "spring-cloud-release-notes",
+            )
+        )
 
     def test_all_publishers_default_deny_unrelated_paths(self) -> None:
         self.assertTrue(
@@ -176,7 +214,7 @@ class UpgradePlannerTests(unittest.TestCase):
             ("spring", "docs.spring.io", "/spring-boot/4.1/upgrading.html", "spring-upgrade-guide"),
             ("spring", "docs.spring.io", "/spring-boot/4.1/reference/using/build-systems.html", "build-system-guide"),
             ("oracle", "docs.oracle.com", "/en/java/javase/25/migrate/", "java-migration"),
-            ("oracle", "www.oracle.com", "/java/technologies/java-se-support-roadmap.html", "java-migration"),
+            ("oracle", "www.oracle.com", "/java/technologies/java-se-support-roadmap.html", "java-support-policy"),
             ("openjdk", "openjdk.org", "/projects/jdk/25/", "java-migration"),
             ("maven", "maven.apache.org", "/docs/3.9.11/release-notes.html", "maven-reference"),
             ("gradle", "docs.gradle.org", "/9.1.0/release-notes.html", "gradle-reference"),
@@ -234,6 +272,7 @@ class UpgradePlannerTests(unittest.TestCase):
     def test_subject_version_is_bound_to_versioned_vendor_locator(self) -> None:
         self.assertTrue(validator.locator_matches_subject_version("/en/java/javase/25/migrate/", "java", "25"))
         self.assertFalse(validator.locator_matches_subject_version("/en/java/javase/17/migrate/", "java", "25"))
+        self.assertFalse(validator.locator_matches_subject_version("/java/technologies/java-se-support-roadmap.html", "java", "25"))
         self.assertTrue(validator.locator_matches_subject_version("/9.1.0/release-notes.html", "gradle", "9.1.0"))
         self.assertFalse(validator.locator_matches_subject_version("/8.14.3/release-notes.html", "gradle", "9.1.0"))
         self.assertTrue(validator.locator_matches_subject_version("/docs/3.9.11/release-notes.html", "maven", "3.9.11"))
@@ -247,10 +286,23 @@ class UpgradePlannerTests(unittest.TestCase):
 
     def evidence_file(self, root: Path, facts: list[dict[str, object]]) -> Path:
         path = root / "evidence.json"
+        imported = any(fact.get("certainty") in {"resolved", "effective"} for fact in facts)
+        provenance = {
+            "producer": "upgrade-test", "tool": "controlled-report", "tool_version": "1.0",
+            "command_or_settings": "sanitized test fixture", "collected_at": "2026-07-12T00:00:00Z",
+            "environment_id": "test-isolation", "project_identity": "project:.",
+            "sanitization": {
+                "status": "sanitized", "configuration_values_omitted": True,
+                "determinative_fields_preserved": True,
+            },
+        } if imported else None
         data = {
             "schema_version": "spring-evidence/1",
             "repository": {"root": "."},
-            "collection": {"collector_version": "test", "mode": "static", "network_used": False, "build_executed": False},
+            "collection": {
+                "collector_version": "test", "mode": "imported-resolved" if imported else "static",
+                "network_used": False, "build_executed": False, "provenance": provenance,
+            },
             "projects": [],
             "facts": facts,
             "conflicts": [],
@@ -274,16 +326,17 @@ class UpgradePlannerTests(unittest.TestCase):
             root = Path(directory)
             path = self.evidence_file(root, [
                 self.fact(project_id="project:.", kind="platform.version", name="spring-boot", value="3.5.2", certainty="resolved", source={"type": "file", "path": "resolved.json"}),
-                self.fact(project_id="project:.", kind="platform.version", name="spring-cloud.version", value="2025.0.1", certainty="resolved", source={"type": "file", "path": "pom.xml"}),
+                self.fact(project_id="project:.", kind="platform.version", name="spring-cloud.version", value="2025.0.1.1", certainty="resolved", source={"type": "file", "path": "pom.xml"}),
             ])
             plan = builder.build(
                 path, "4.1.0", False, [], False,
-                "2025.1.2", False, "25", "3.9.11", None,
+                "2025.1.2.1", False, "25", "3.9.11", None,
             )
-        self.assertEqual(plan["current"]["spring_cloud"], "2025.0.1")
+        self.assertEqual(plan["current"]["spring_cloud"], "2025.0.1.1")
         self.assertEqual(plan["current"]["spring_cloud_usage"], "used")
         self.assertTrue(plan["current"]["spring_cloud_evidence_ids"])
         self.assertEqual(plan["target"]["spring_cloud_usage"], "used")
+        self.assertEqual(plan["target"]["spring_cloud"], "2025.1.2.1")
         self.assertEqual(plan["target"]["build_tool"], "maven")
         self.assertEqual(plan["status"], "draft")
         self.assertEqual(validator.validate(plan), [])
@@ -337,12 +390,14 @@ class UpgradePlannerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             path = self.evidence_file(root, [
-                self.fact(project_id="project:.", kind="platform.version", name="spring-boot", value="3.5.2", certainty="resolved", source={"type": "file", "path": "resolved.json"})
+                self.fact(project_id="project:.", kind="platform.usage", name="spring-cloud", value="not-used", certainty="resolved", source={"type": "file", "path": "resolved.json"}),
+                self.fact(project_id="project:.", kind="platform.version", name="spring-boot", value="3.5.2", certainty="resolved", source={"type": "file", "path": "resolved.json"}),
             ])
             source_specs = {
                 "source:support": ("target-support", "https://spring.io/support-policy", "spring", None, None),
                 "source:requirements": ("system-requirements", "https://docs.spring.io/spring-boot/4.1/system-requirements.html", "spring", None, None),
                 "source:cloud": ("spring-cloud-compatibility", "https://spring.io/projects/spring-cloud", "spring", None, None),
+                "source:cloud-release": ("spring-cloud-release-notes", "https://github.com/spring-cloud/spring-cloud-release/wiki/Spring-Cloud-2025.1-Release-Notes", "spring-github", None, None),
                 "source:java": ("java-migration", "https://docs.oracle.com/en/java/javase/25/migrate/", "oracle", None, None),
                 "source:maven": ("maven-reference", "https://maven.apache.org/docs/3.9.11/release-notes.html", "maven", None, None),
                 "source:migration-4.0": ("migration-guide", "https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide", "spring-github", "3.5.2", "4.0.5"),
@@ -354,11 +409,7 @@ class UpgradePlannerTests(unittest.TestCase):
             )
             plan["status"] = "ready"
             plan["unresolved"] = []
-            plan["current"].update(
-                spring_cloud=None,
-                spring_cloud_usage="not-used",
-                spring_cloud_evidence_ids=["evidence:no-spring-cloud"],
-            )
+            plan["input"]["evidence_captured_at"] = "2026-07-12T00:00:00Z"
             validation_time = datetime(2026, 7, 12, 12, 0, 0, tzinfo=UTC)
             for source in plan["source_ledger"]:
                 scope, locator, publisher, applies_from, applies_to = source_specs[source["id"]]
@@ -368,11 +419,9 @@ class UpgradePlannerTests(unittest.TestCase):
                 final_locator = locator
                 if source["id"] == "source:support":
                     final_locator = "https://spring.io/support-policy/"
-                elif source["id"] == "source:requirements":
-                    final_locator = "https://docs.spring.io/spring-boot/system-requirements.html"
                 elif source["id"] == "source:cloud":
                     final_locator = "https://spring.io/projects/spring-cloud/"
-                if scope == "spring-cloud-compatibility":
+                if scope in {"spring-cloud-compatibility", "spring-cloud-release-notes"}:
                     subject, subject_version = "spring-cloud", "2025.1.2"
                 elif scope == "java-migration":
                     subject, subject_version = "java", "25"
@@ -385,7 +434,7 @@ class UpgradePlannerTests(unittest.TestCase):
                     checked_version=applies_to or "4.1.0", scope=scope,
                     applies_from=applies_from, applies_to=applies_to, snapshot_path=snapshot.name,
                     sha256=digest,
-                    checked_spring_cloud="2025.1.2" if scope == "spring-cloud-compatibility" else None,
+                    checked_spring_cloud="2025.1.2" if scope in {"spring-cloud-compatibility", "spring-cloud-release-notes"} else None,
                     subject=subject, subject_version=subject_version,
                     capture={
                         "method": "controlled-fetch", "captured_at": "2026-07-12T00:00:00Z",
@@ -406,11 +455,43 @@ class UpgradePlannerTests(unittest.TestCase):
                 return validator.validate(plan, root, now=validation_time)
 
             self.assertEqual(validate_ready(), [])
+            current_evidence_ids = list(plan["current"]["evidence_ids"])
+            plan["current"]["evidence_ids"] = []
+            self.assertTrue(any("requires evidence IDs" in error for error in validate_ready()))
+            plan["current"]["evidence_ids"] = ["fact:" + "0" * 64]
+            self.assertTrue(any("absent from the evidence snapshot" in error for error in validate_ready()))
+            plan["current"]["evidence_ids"] = current_evidence_ids
+            cloud_evidence_ids = list(plan["current"]["spring_cloud_evidence_ids"])
+            plan["current"]["spring_cloud_evidence_ids"] = [{"not": "an-id"}]
+            self.assertTrue(any("Spring Cloud usage/version evidence is invalid" in error for error in validate_ready()))
+            plan["current"]["spring_cloud_evidence_ids"] = cloud_evidence_ids
+            evidence_sha256 = plan["input"]["evidence_sha256"]
+            plan["input"]["evidence_sha256"] = "a" * 64
+            self.assertTrue(any("evidence snapshot hash mismatch" in error for error in validate_ready()))
+            plan["input"]["evidence_sha256"] = evidence_sha256
+            plan["input"]["evidence_captured_at"] = "2026-07-11T00:00:00Z"
+            self.assertTrue(any("predates imported report" in error for error in validate_ready()))
+            plan["input"]["evidence_captured_at"] = "2026-07-12T00:00:00Z"
+            cloud_gate = next(gate for gate in plan["compatibility_gates"] if gate["id"] == "gate:spring-cloud")
+            cloud_gate.update(status="not-applicable", evidence_ids=current_evidence_ids)
+            self.assertTrue(any("resolved non-use evidence" in error for error in validate_ready()))
+            cloud_gate.update(status="pass", evidence_ids=[])
             java_gate = next(gate for gate in plan["compatibility_gates"] if gate["id"] == "gate:java-build-tools")
             java_gate["source_ids"].remove("source:java")
             self.assertTrue(any("subject-bound sources" in error for error in validate_ready()))
             java_gate["source_ids"].append("source:java")
             java_gate["source_ids"].sort()
+            java_source = next(source for source in plan["source_ledger"] if source["id"] == "source:java")
+            java_locator = java_source["locator"]
+            java_final_locator = java_source["capture"]["final_locator"]
+            roadmap = "https://www.oracle.com/java/technologies/java-se-support-roadmap.html"
+            java_source["capture"]["final_locator"] = roadmap
+            self.assertTrue(any("controlled capture manifest" in error for error in validate_ready()))
+            java_source.update(locator=roadmap, scope="java-support-policy")
+            java_source["capture"]["final_locator"] = roadmap
+            self.assertTrue(any("subject-bound sources" in error for error in validate_ready()))
+            java_source.update(locator=java_locator, scope="java-migration")
+            java_source["capture"]["final_locator"] = java_final_locator
             release_source = next(source for source in plan["source_ledger"] if source["id"] == "source:release-4.1")
             original_applicability = (release_source["applies_from"], release_source["applies_to"], release_source["checked_version"])
             release_source.update(applies_from="3.5.2", applies_to="4.0.5", checked_version="4.0.5")
@@ -476,8 +557,29 @@ class UpgradePlannerTests(unittest.TestCase):
             requirements_source["locator"] = "https://docs.spring.io/spring-boot/3.5/system-requirements.html"
             self.assertTrue(any("locator line" in error for error in validate_ready()))
             requirements_source["locator"] = source_specs["source:requirements"][1]
+            requirements_source["capture"]["final_locator"] = "https://docs.spring.io/spring-boot/system-requirements.html"
+            self.assertTrue(any("locator line" in error for error in validate_ready()))
+            requirements_source["capture"]["final_locator"] = requirements_source["locator"]
             plan["source_ledger"][0]["sha256"] = "b" * 64
             self.assertTrue(any("hash mismatch" in error for error in validate_ready()))
+
+    def test_malformed_plan_json_reports_an_error_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            plan_path = Path(directory) / "broken.json"
+            plan_path.write_text('{"schema_version":', encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "skills" / "spring-upgrade-planner" / "scripts" / "validate_upgrade_plan.py"),
+                    str(plan_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ERROR: cannot read valid UTF-8 plan JSON", result.stdout)
+        self.assertNotIn("Traceback", result.stderr)
 
     def test_ready_plan_rejects_duplicated_snapshot_identity(self) -> None:
         source = {

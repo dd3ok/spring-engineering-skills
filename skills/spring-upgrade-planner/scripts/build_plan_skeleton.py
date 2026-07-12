@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -14,8 +15,23 @@ FACT_FIELDS = {"id", "project_id", "kind", "name", "value", "certainty", "source
 SIGNAL_KINDS = {"config.key", "code.signal", "test.signal", "deployment.signal"}
 SENSITIVE_VALUE = re.compile(r"(?i)(secret|password|passwd|credential|private[_-]?key|access[_-]?token|api[_-]?key)")
 VERSION = re.compile(r"^\d{1,4}\.\d{1,4}\.\d{1,4}(?:-(?:SNAPSHOT|M\d{1,4}|RC\d{1,4}))?$", re.IGNORECASE)
+CLOUD_VERSION = re.compile(r"^\d{4}\.\d{1,4}\.\d{1,4}(?:\.\d{1,4})?(?:-(?:SNAPSHOT|M\d{1,4}|RC\d{1,4}))?$", re.IGNORECASE)
 PRERELEASE = re.compile(r"-(?:SNAPSHOT|M\d+|RC\d+)$", re.IGNORECASE)
 MIN_PYTHON = (3, 12)
+MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
+PROVENANCE_FIELDS = {
+    "producer", "tool", "tool_version", "command_or_settings", "collected_at",
+    "environment_id", "project_identity", "sanitization",
+}
+PROVENANCE_STRING_FIELDS = PROVENANCE_FIELDS - {"sanitization"}
+SANITIZATION_FIELDS = {"status", "configuration_values_omitted", "determinative_fields_preserved"}
+PROVENANCE_SECRET = re.compile(
+    r"(?i)(?:secret|password|passwd|credential|private[_-]?key|access[_-]?token|api[_-]?key|token|authorization|bearer)"
+    r"(?:\s|=|:)+(?!<redacted>|\[redacted\]|\*\*\*)\S+"
+)
+REDACTED_AUTHORIZATION = re.compile(
+    r"(?i)authorization\s*:\s*(?:bearer\s+)?(?:<redacted>|\[redacted\]|\*\*\*)"
+)
 
 
 def require_supported_python(version=None) -> None:
@@ -27,8 +43,44 @@ def require_supported_python(version=None) -> None:
 require_supported_python()
 
 
+def valid_imported_provenance(value: object, *, now: datetime | None = None) -> bool:
+    if (
+        not isinstance(value, dict)
+        or set(value) != PROVENANCE_FIELDS
+        or not all(isinstance(value.get(field), str) and value[field] for field in PROVENANCE_STRING_FIELDS)
+    ):
+        return False
+    sanitization = value.get("sanitization")
+    if (
+        not isinstance(sanitization, dict)
+        or set(sanitization) != SANITIZATION_FIELDS
+        or sanitization.get("status") != "sanitized"
+        or sanitization.get("configuration_values_omitted") is not True
+        or sanitization.get("determinative_fields_preserved") is not True
+    ):
+        return False
+    strings = [str(value[field]) for field in PROVENANCE_STRING_FIELDS]
+    if any(any(ord(character) < 32 or ord(character) == 127 for character in item) for item in strings):
+        return False
+    normalized = [REDACTED_AUTHORIZATION.sub("authorization:<redacted>", item) for item in strings]
+    if any(PROVENANCE_SECRET.search(item) or re.search(r"https?://[^/\s]+@", item) for item in normalized):
+        return False
+    try:
+        collected_at = datetime.strptime(str(value["collected_at"]), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except ValueError:
+        return False
+    current_time = now or datetime.now(UTC)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=UTC)
+    return collected_at <= current_time
+
+
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def expected_fact_id(fact: dict[str, Any]) -> str:
@@ -64,10 +116,10 @@ def validate_evidence_input(evidence: object) -> list[str]:
     if not isinstance(repository, dict) or repository != {"root": "."}:
         errors.append("evidence repository contract is invalid")
     collection = evidence.get("collection")
-    if not isinstance(collection, dict) or collection.get("mode") not in {"static", "imported-resolved"}:
+    if not isinstance(collection, dict) or not isinstance(collection.get("mode"), str) or collection.get("mode") not in {"static", "imported-resolved"}:
         errors.append("evidence collection mode is invalid")
     else:
-        if set(collection) != {"collector_version", "mode", "network_used", "build_executed"}:
+        if set(collection) != {"collector_version", "mode", "network_used", "build_executed", "provenance"}:
             errors.append("evidence collection contains unknown fields")
         if not isinstance(collection.get("collector_version"), str) or not collection["collector_version"]:
             errors.append("evidence collector_version is missing")
@@ -77,6 +129,11 @@ def validate_evidence_input(evidence: object) -> list[str]:
             or (collection.get("mode") == "static" and (collection["network_used"] or collection["build_executed"]))
         ):
             errors.append("evidence collection execution flags are invalid")
+        provenance = collection.get("provenance")
+        if collection.get("mode") == "static" and provenance is not None:
+            errors.append("static evidence cannot declare imported provenance")
+        if collection.get("mode") == "imported-resolved" and not valid_imported_provenance(provenance):
+            errors.append("imported-resolved evidence lacks complete provenance")
     redaction = evidence.get("redaction")
     if not isinstance(redaction, dict) or redaction != {"configuration_values_omitted": True, "environment_read": False}:
         errors.append("evidence redaction contract is invalid")
@@ -97,7 +154,7 @@ def validate_evidence_input(evidence: object) -> list[str]:
             if not valid_project_path(project.get("path")) or not valid_relative_path(project.get("descriptor")):
                 errors.append(f"evidence project {index} has an unsafe path")
             modules = project.get("module_ids")
-            if project.get("build_system") not in {"maven", "gradle"} or not isinstance(modules, list) or not all(
+            if not isinstance(project.get("build_system"), str) or project.get("build_system") not in {"maven", "gradle"} or not isinstance(modules, list) or not all(
                 isinstance(item, str) and item.startswith("project:") and valid_project_path(item.removeprefix("project:")) for item in modules
             ):
                 errors.append(f"evidence project {index} has invalid build metadata")
@@ -119,11 +176,13 @@ def validate_evidence_input(evidence: object) -> list[str]:
             errors.append(f"evidence fact {index} has an unsafe source path")
         elif "line" in source and (type(source["line"]) is not int or source["line"] < 1):
             errors.append(f"evidence fact {index} has an invalid source line")
-        if fact.get("project_id") not in project_ids or fact.get("certainty") not in PRECEDENCE:
+        if not isinstance(fact.get("project_id"), str) or fact.get("project_id") not in project_ids or not isinstance(fact.get("certainty"), str) or fact.get("certainty") not in PRECEDENCE:
             errors.append(f"evidence fact {index} has invalid project or certainty")
+        elif isinstance(collection, dict) and collection.get("mode") == "static" and fact.get("certainty") not in {"declared", "inferred"}:
+            errors.append(f"evidence fact {index} uses resolved/effective certainty in static evidence")
         if not all(isinstance(fact.get(field), str) and fact.get(field) for field in ("kind", "name", "value")):
             errors.append(f"evidence fact {index} has invalid string fields")
-        if fact.get("kind") in SIGNAL_KINDS and fact.get("value") != "present":
+        if isinstance(fact.get("kind"), str) and fact.get("kind") in SIGNAL_KINDS and fact.get("value") != "present":
             errors.append(f"evidence fact {index} exposes a signal value")
         for field in ("value", "declaration_role", "scope", "catalog_source"):
             value = fact.get(field)
@@ -195,24 +254,36 @@ def current_boot(evidence: dict[str, Any]) -> tuple[str | None, list[str], str |
 
 
 def current_cloud(evidence: dict[str, Any]) -> tuple[str | None, list[str], str]:
-    candidates = [
+    version_candidates = [
         fact for fact in evidence.get("facts", [])
         if isinstance(fact, dict)
         and fact.get("kind") == "platform.version"
         and fact.get("name") in {"spring-cloud", "spring-cloud.version"}
         and fact.get("certainty") in PRECEDENCE
         and isinstance(fact.get("value"), str)
-        and VERSION.fullmatch(fact["value"])
+        and CLOUD_VERSION.fullmatch(fact["value"])
     ]
+    non_use_candidates = [
+        fact for fact in evidence.get("facts", [])
+        if isinstance(fact, dict)
+        and fact.get("kind") == "platform.usage"
+        and fact.get("name") == "spring-cloud"
+        and fact.get("value") == "not-used"
+        and fact.get("certainty") in PRECEDENCE
+    ]
+    candidates = version_candidates + non_use_candidates
     if not candidates:
         return None, [], "unknown"
     rank = max(PRECEDENCE[str(item["certainty"])] for item in candidates)
     strongest = [item for item in candidates if PRECEDENCE[str(item["certainty"])] == rank]
-    values = sorted({str(item["value"]) for item in strongest})
     ids = sorted(str(item["id"]) for item in strongest)
-    if len(values) != 1:
+    strongest_versions = sorted({str(item["value"]) for item in strongest if item in version_candidates})
+    strongest_non_use = any(item in non_use_candidates for item in strongest)
+    if strongest_non_use and not strongest_versions:
+        return None, ids, "not-used"
+    if strongest_non_use or len(strongest_versions) != 1:
         return None, ids, "unknown"
-    return values[0], ids, "used"
+    return strongest_versions[0], ids, "used"
 
 
 def version_tuple(value: str) -> tuple[int, int, int]:
@@ -265,11 +336,13 @@ def build(
     target_maven: str | None = None,
     target_gradle: str | None = None,
 ) -> dict[str, Any]:
-    if any(not isinstance(value, str) or not value.strip() or not value.startswith("source:") for value in source_ids):
-        raise ValueError("source ids must be non-empty and start with source:")
+    if any(not isinstance(value, str) or re.fullmatch(r"source:.+", value) is None for value in source_ids):
+        raise ValueError("source ids must start with source: and have a non-empty suffix")
+    if len(set(source_ids)) != len(source_ids):
+        raise ValueError("source ids must be unique")
     if not VERSION.fullmatch(target):
         raise ValueError("target must be an exact Spring Boot version such as 4.1.0 or 4.1.0-RC1")
-    if target_spring_cloud is not None and not VERSION.fullmatch(target_spring_cloud):
+    if target_spring_cloud is not None and not CLOUD_VERSION.fullmatch(target_spring_cloud):
         raise ValueError("target Spring Cloud must be an exact service release such as 2025.1.2")
     if target_spring_cloud is not None and no_spring_cloud:
         raise ValueError("target Spring Cloud version and --no-spring-cloud are mutually exclusive")
@@ -281,7 +354,11 @@ def build(
         raise ValueError("target Maven and Gradle versions are mutually exclusive")
     if selected_build_tools and not VERSION.fullmatch(str(selected_build_tools[0][1])):
         raise ValueError("target build-tool version must be exact")
-    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    with evidence_path.open("rb") as handle:
+        evidence_payload = handle.read(MAX_EVIDENCE_BYTES + 1)
+    if len(evidence_payload) > MAX_EVIDENCE_BYTES:
+        raise ValueError("evidence snapshot exceeds the 64 MiB limit")
+    evidence = json.loads(evidence_payload.decode("utf-8"))
     evidence_errors = validate_evidence_input(evidence)
     if evidence_errors:
         raise ValueError("invalid evidence: " + "; ".join(evidence_errors))
@@ -329,7 +406,15 @@ def build(
     return {
         "schema_version": "spring-upgrade-plan/2",
         "status": status,
-        "input": {"evidence_sha256": sha256(evidence_path), "target": target, "source_snapshot_ids": sorted(source_ids)},
+        "input": {
+            "evidence_sha256": sha256(evidence_path),
+            "evidence_captured_at": None,
+            "evidence_snapshot_path": evidence_path.name
+            if re.fullmatch(r"[A-Za-z0-9._-]+", evidence_path.name)
+            else None,
+            "target": target,
+            "source_snapshot_ids": sorted(source_ids),
+        },
         "current": {
             "spring_boot": current, "spring_cloud": cloud, "spring_cloud_usage": cloud_usage,
             "evidence_ids": evidence_ids, "spring_cloud_evidence_ids": cloud_evidence_ids,
@@ -381,7 +466,7 @@ def main() -> int:
             args.allow_downgrade, args.target_spring_cloud, args.no_spring_cloud,
             args.target_java, args.target_maven, args.target_gradle,
         )
-    except (ValueError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         raise SystemExit(str(error)) from error
     rendered = json.dumps(plan, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     if args.output:

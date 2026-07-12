@@ -1,0 +1,48 @@
+{
+  "official_publishers": [
+    "aws.amazon.com",
+    "cheatsheetseries.owasp.org",
+    "csrc.nist.gov",
+    "docs.gradle.org",
+    "docs.hibernate.org",
+    "docs.liquibase.com",
+    "docs.micrometer.io",
+    "docs.openrewrite.org",
+    "docs.oracle.com",
+    "docs.spring.io",
+    "documentation.red-gate.com",
+    "grafana.com",
+    "hibernate.org",
+    "java.testcontainers.org",
+    "jdbc.postgresql.org",
+    "kafka.apache.org",
+    "kubernetes.io",
+    "maven.apache.org",
+    "openjdk.org",
+    "opentelemetry.io",
+    "owasp.org",
+    "projectreactor.io",
+    "pulsar.apache.org",
+    "redis.io",
+    "research.google",
+    "spring.io",
+    "sre.google",
+    "start.spring.io",
+    "www.graphql-java.com",
+    "www.jooq.org",
+    "www.oracle.com",
+    "www.postgresql.org",
+    "www.rabbitmq.com"
+  ],
+  "supporting_publishers": [
+    "hdrhistogram.github.io",
+    "martin.kleppmann.com",
+    "www.brendangregg.com"
+  ],
+  "github_owners": {
+    "async-profiler": "official-project",
+    "brettwooldridge": "official-project",
+    "spring-cloud": "official-project",
+    "spring-projects": "official-project"
+  }
+}

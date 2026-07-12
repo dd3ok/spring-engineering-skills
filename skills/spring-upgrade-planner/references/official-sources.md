@@ -11,6 +11,7 @@ Checked on: 2026-07-12. Treat official target-version requirements and migration
 - [Spring Boot 4.1 release notes](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Notes) — target-line changes after the Boot 4.0 bridge.
 - [Spring Cloud project page](https://spring.io/projects/spring-cloud/) — primary current release-train and Spring Boot compatibility table, including service-release qualifications.
 - [Spring Cloud supported versions](https://github.com/spring-cloud/spring-cloud-release/wiki/Supported-Versions) — component matrix and support detail; it can lag the project page. When official sources disagree, verify the newer project table and the selected train's release notes before deciding the gate.
+- [Spring Cloud 2025.1 release notes](https://github.com/spring-cloud/spring-cloud-release/wiki/Spring-Cloud-2025.1-Release-Notes) — train-bound example for reconciling compatibility details; substitute the selected target train.
 - [Spring project release highlights](https://spring.io/projects/release-highlights) and [project catalog](https://spring.io/projects/) — discovery; confirm details in each project’s release notes.
 - [OpenRewrite Spring recipes](https://docs.openrewrite.org/recipes/java/spring) — transformation recipes and applicability.
 - [OpenRewrite Maven dry run](https://docs.openrewrite.org/reference/rewrite-maven-plugin) and [Gradle plugin configuration](https://docs.openrewrite.org/reference/gradle-plugin-configuration) — reviewable dry-run workflow.

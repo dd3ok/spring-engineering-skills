@@ -46,6 +46,7 @@ def validate_contract() -> list[str]:
     positive_coverage: set[str] = set()
     negative_coverage: set[str] = set()
     review_route_coverage: set[str] = set()
+    positive_reference_coverage: dict[str, set[str]] = {name: set() for name in skill_names}
     try:
         review_always, review_policy = load_review_policy()
     except (OSError, ValueError, json.JSONDecodeError) as error:
@@ -160,10 +161,19 @@ def validate_contract() -> list[str]:
                         policy_refs.update(review_policy[route])
                     if set(refs) != policy_refs:
                         errors.append(f"{case_id} expected_refs do not match review routing policy")
-        elif review_routes is not None:
-            errors.append(f"{case_id} declares review_routes for a non-review skill")
+        else:
+            if review_routes is not None:
+                errors.append(f"{case_id} declares review_routes for a non-review skill")
+            if expected is not None:
+                root = skill_dirs[expected]
+                routed_refs = set(
+                    re.findall(r"`(references/[^`]+)`", (root / "SKILL.md").read_text(encoding="utf-8"))
+                )
+                if set(refs) | set(forbidden_refs) != routed_refs:
+                    errors.append(f"{case_id} does not exactly partition dedicated-skill references")
         if expected is not None:
             positive_coverage.add(expected)
+            positive_reference_coverage[expected].update(refs)
             root = skill_dirs[expected]
             for reference in refs:
                 if not reference.startswith("references/") or not (root / reference).is_file():
@@ -186,6 +196,16 @@ def validate_contract() -> list[str]:
     missing_review_routes = set(review_policy) - review_route_coverage
     if missing_review_routes:
         errors.append("review routes without routing cases: " + ", ".join(sorted(missing_review_routes)))
+    for skill_name, root in sorted(skill_dirs.items()):
+        direct_refs = set(
+            re.findall(r"`(references/[^`]+)`", (root / "SKILL.md").read_text(encoding="utf-8"))
+        )
+        missing_refs = direct_refs - positive_reference_coverage[skill_name]
+        if missing_refs:
+            errors.append(
+                f"{skill_name} references without positive route coverage: "
+                + ", ".join(sorted(missing_refs))
+            )
 
     return errors
 

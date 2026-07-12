@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from skill_utils import ROOT
 
@@ -17,6 +19,31 @@ FIXED_VERSION_PATTERN = re.compile(
 PRERELEASE_PATTERN = re.compile(r"(?:SNAPSHOT|(?:^|[-./])(?:M|MILESTONE|RC)\d+|[-./](?:alpha|beta|ea)\d*)", re.IGNORECASE)
 LATEST_LABEL_PATTERN = re.compile(r"\b(?:current|latest|stable|ga)\b", re.IGNORECASE)
 MAX_REVIEW_AGE_DAYS = 180
+PUBLISHER_POLICY_PATH = ROOT / "evals" / "source-publisher-policy.json"
+
+
+def load_publisher_policy(path: Path = PUBLISHER_POLICY_PATH) -> tuple[set[str], set[str]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    official = data.get("official_publishers") if isinstance(data, dict) else None
+    supporting = data.get("supporting_publishers") if isinstance(data, dict) else None
+    github = data.get("github_owners") if isinstance(data, dict) else None
+    if (
+        not isinstance(official, list)
+        or not all(isinstance(value, str) and value for value in official)
+        or not isinstance(supporting, list)
+        or not all(isinstance(value, str) and value for value in supporting)
+        or set(official) & set(supporting)
+        or not isinstance(github, dict)
+        or not all(
+            isinstance(owner, str)
+            and owner
+            and isinstance(classification, str)
+            and classification in {"official-project", "supporting-project"}
+            for owner, classification in github.items()
+        )
+    ):
+        raise ValueError("source publisher policy is invalid")
+    return set(official) | set(supporting), set(github)
 
 
 def source_files(root: Path = ROOT) -> tuple[Path, ...]:
@@ -34,6 +61,10 @@ def validate_source_policy(
     files = source_files(root)
     if not files:
         return ["no official source maps found"]
+    try:
+        approved_hosts, approved_github_owners = load_publisher_policy()
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        return [f"invalid source publisher policy: {error}"]
 
     urls_by_skill: dict[Path, dict[str, list[Path]]] = defaultdict(lambda: defaultdict(list))
 
@@ -61,6 +92,28 @@ def validate_source_policy(
         skill_root = relative.parents[1]
         for url in set(urls):
             urls_by_skill[skill_root][url].append(relative)
+            try:
+                parsed = urlsplit(url)
+                hostname = parsed.hostname
+                port = parsed.port
+            except ValueError:
+                parsed = None
+                hostname = None
+                port = None
+            if (
+                parsed is None
+                or parsed.scheme != "https"
+                or hostname is None
+                or parsed.username is not None
+                or parsed.password is not None
+                or port not in {None, 443}
+                or hostname not in approved_hosts | {"github.com"}
+            ):
+                errors.append(f"source URL uses an unapproved publisher: {relative}: {url}")
+            elif hostname == "github.com":
+                owner = parsed.path.strip("/").split("/", 1)[0]
+                if owner not in approved_github_owners:
+                    errors.append(f"GitHub source uses an unapproved owner: {relative}: {url}")
         for url, count in sorted(Counter(urls).items()):
             if count > 1:
                 errors.append(f"duplicate URL in {relative}: {url}")
@@ -92,7 +145,7 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}")
         return 1
-    print(f"Official source policy is valid ({len(source_files())} source maps).")
+    print(f"Approved source publisher policy is valid ({len(source_files())} source maps).")
     return 0
 
 

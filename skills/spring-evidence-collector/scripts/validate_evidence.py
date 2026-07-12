@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -15,6 +16,20 @@ TOP_LEVEL_FIELDS = {"schema_version", "repository", "collection", "projects", "f
 FACT_FIELDS = {"id", "project_id", "kind", "name", "value", "certainty", "source", "declaration_role", "scope", "catalog_source"}
 SENSITIVE_VALUE = re.compile(r"(?i)(secret|password|passwd|credential|private[_-]?key|access[_-]?token|api[_-]?key)")
 MIN_PYTHON = (3, 12)
+MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
+PROVENANCE_FIELDS = {
+    "producer", "tool", "tool_version", "command_or_settings", "collected_at",
+    "environment_id", "project_identity", "sanitization",
+}
+PROVENANCE_STRING_FIELDS = PROVENANCE_FIELDS - {"sanitization"}
+SANITIZATION_FIELDS = {"status", "configuration_values_omitted", "determinative_fields_preserved"}
+PROVENANCE_SECRET = re.compile(
+    r"(?i)(?:secret|password|passwd|credential|private[_-]?key|access[_-]?token|api[_-]?key|token|authorization|bearer)"
+    r"(?:\s|=|:)+(?!<redacted>|\[redacted\]|\*\*\*)\S+"
+)
+REDACTED_AUTHORIZATION = re.compile(
+    r"(?i)authorization\s*:\s*(?:bearer\s+)?(?:<redacted>|\[redacted\]|\*\*\*)"
+)
 
 
 def require_supported_python(version=None) -> None:
@@ -24,6 +39,38 @@ def require_supported_python(version=None) -> None:
 
 
 require_supported_python()
+
+
+def valid_imported_provenance(value: object, *, now: datetime | None = None) -> bool:
+    if (
+        not isinstance(value, dict)
+        or set(value) != PROVENANCE_FIELDS
+        or not all(isinstance(value.get(field), str) and value[field] for field in PROVENANCE_STRING_FIELDS)
+    ):
+        return False
+    sanitization = value.get("sanitization")
+    if (
+        not isinstance(sanitization, dict)
+        or set(sanitization) != SANITIZATION_FIELDS
+        or sanitization.get("status") != "sanitized"
+        or sanitization.get("configuration_values_omitted") is not True
+        or sanitization.get("determinative_fields_preserved") is not True
+    ):
+        return False
+    strings = [str(value[field]) for field in PROVENANCE_STRING_FIELDS]
+    if any(any(ord(character) < 32 or ord(character) == 127 for character in item) for item in strings):
+        return False
+    normalized = [REDACTED_AUTHORIZATION.sub("authorization:<redacted>", item) for item in strings]
+    if any(PROVENANCE_SECRET.search(item) or re.search(r"https?://[^/\s]+@", item) for item in normalized):
+        return False
+    try:
+        collected_at = datetime.strptime(str(value["collected_at"]), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except ValueError:
+        return False
+    current_time = now or datetime.now(UTC)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=UTC)
+    return collected_at <= current_time
 
 
 def canonical_relative_path(value: object, *, allow_dot: bool = False) -> bool:
@@ -61,10 +108,10 @@ def validate(data: object) -> list[str]:
     elif set(repository) != {"root"}:
         errors.append("repository contains unknown fields")
     collection = data.get("collection")
-    if not isinstance(collection, dict) or collection.get("mode") not in {"static", "imported-resolved"}:
+    if not isinstance(collection, dict) or not isinstance(collection.get("mode"), str) or collection.get("mode") not in {"static", "imported-resolved"}:
         errors.append("invalid collection mode")
     else:
-        if set(collection) != {"collector_version", "mode", "network_used", "build_executed"}:
+        if set(collection) != {"collector_version", "mode", "network_used", "build_executed", "provenance"}:
             errors.append("collection contains unknown fields")
         if not isinstance(collection.get("collector_version"), str) or not collection["collector_version"]:
             errors.append("collector_version is missing")
@@ -72,6 +119,11 @@ def validate(data: object) -> list[str]:
             errors.append("collection execution flags must be booleans")
         elif collection.get("mode") == "static" and (collection["network_used"] or collection["build_executed"]):
             errors.append("static evidence cannot use network or execute a build")
+        provenance = collection.get("provenance")
+        if collection.get("mode") == "static" and provenance is not None:
+            errors.append("static evidence cannot declare imported provenance")
+        if collection.get("mode") == "imported-resolved" and not valid_imported_provenance(provenance):
+            errors.append("imported-resolved evidence lacks complete provenance")
     redaction = data.get("redaction")
     if not isinstance(redaction, dict) or redaction.get("configuration_values_omitted") is not True or redaction.get("environment_read") is not False:
         errors.append("redaction contract is missing")
@@ -98,7 +150,7 @@ def validate(data: object) -> list[str]:
                 errors.append(f"projects[{index}] has invalid path")
             if not canonical_relative_path(project.get("descriptor")):
                 errors.append(f"projects[{index}] has invalid descriptor")
-            if project.get("build_system") not in {"maven", "gradle"} or not isinstance(project.get("module_ids"), list) or not all(isinstance(item, str) and item.startswith("project:") and canonical_relative_path(item.removeprefix("project:"), allow_dot=True) for item in project.get("module_ids", [])):
+            if not isinstance(project.get("build_system"), str) or project.get("build_system") not in {"maven", "gradle"} or not isinstance(project.get("module_ids"), list) or not all(isinstance(item, str) and item.startswith("project:") and canonical_relative_path(item.removeprefix("project:"), allow_dot=True) for item in project.get("module_ids", [])):
                 errors.append(f"projects[{index}] has invalid build metadata")
 
     facts = data.get("facts")
@@ -120,10 +172,12 @@ def validate(data: object) -> list[str]:
         if not isinstance(fact_id, str) or fact_id in ids or fact_id != expected_fact_id(fact):
             errors.append(f"facts[{index}] has invalid, stale, or duplicate id")
         ids.add(str(fact_id))
-        if fact.get("project_id") not in project_ids:
+        if not isinstance(fact.get("project_id"), str) or fact.get("project_id") not in project_ids:
             errors.append(f"facts[{index}] references an unknown project")
-        if fact.get("certainty") not in CERTAINTY:
+        if not isinstance(fact.get("certainty"), str) or fact.get("certainty") not in CERTAINTY:
             errors.append(f"facts[{index}] has invalid certainty")
+        elif isinstance(collection, dict) and collection.get("mode") == "static" and fact.get("certainty") not in {"declared", "inferred"}:
+            errors.append(f"facts[{index}] uses resolved/effective certainty in static evidence")
         if not all(isinstance(fact.get(field), str) and fact.get(field) for field in ("kind", "name", "value")):
             errors.append(f"facts[{index}] has invalid string fields")
         source = fact.get("source")
@@ -133,7 +187,7 @@ def validate(data: object) -> list[str]:
             errors.append(f"facts[{index}] source contains unknown fields")
         elif "line" in source and (type(source["line"]) is not int or source["line"] < 1):
             errors.append(f"facts[{index}] has an invalid source line")
-        if fact.get("kind") in SIGNAL_KINDS and fact.get("value") != "present":
+        if isinstance(fact.get("kind"), str) and fact.get("kind") in SIGNAL_KINDS and fact.get("value") != "present":
             errors.append(f"facts[{index}] exposes a value for a key/signal fact")
         if isinstance(fact.get("value"), str) and SENSITIVE_VALUE.search(fact["value"]):
             errors.append(f"facts[{index}] contains a secret-like value")
@@ -202,7 +256,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate spring-evidence/1 JSON.")
     parser.add_argument("evidence", type=Path)
     args = parser.parse_args()
-    data = json.loads(args.evidence.read_text(encoding="utf-8"))
+    try:
+        with args.evidence.open("rb") as handle:
+            payload = handle.read(MAX_EVIDENCE_BYTES + 1)
+        if len(payload) > MAX_EVIDENCE_BYTES:
+            print("ERROR: evidence JSON exceeds the 64 MiB limit")
+            return 1
+        data = json.loads(payload.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        print(f"ERROR: cannot read valid UTF-8 evidence JSON: {error}")
+        return 1
     errors = validate(data)
     if errors:
         for error in errors:

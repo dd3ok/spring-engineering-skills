@@ -1,7 +1,7 @@
 [
   {
     "id": "broad-review",
-    "prompt": "Review this Spring Boot service for production readiness",
+    "prompt": "Review this Spring Boot service for production readiness before repository stack evidence has been inspected",
     "expected_skill": "spring-best-practice-review",
     "activation_channel": "semantic",
     "route_signals": ["production readiness"],
@@ -17,6 +17,27 @@
     "activation_channel": "semantic",
     "route_signals": ["repository inventory"],
     "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "evidence-schema-consumer",
+    "prompt": "Implement a consumer for spring-evidence/1 JSON using its schema",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["spring-evidence/1", "consumer", "schema"],
+    "expected_refs": ["references/evidence-contract.md", "references/evidence.schema.json"],
+    "forbidden_refs": ["references/official-sources.md"],
+    "forbidden_skills": ["spring-upgrade-planner"]
+  },
+  {
+    "id": "evidence-build-interpretation",
+    "prompt": "Interpret Maven and Spring Boot version evidence in this evidence pack",
+    "expected_skill": "spring-evidence-collector",
+    "activation_channel": "semantic",
+    "route_signals": ["Maven", "Spring Boot", "evidence pack"],
+    "expected_refs": ["references/evidence-contract.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/evidence.schema.json"],
     "forbidden_skills": ["spring-upgrade-planner"]
   },
   {
@@ -26,7 +47,18 @@
     "activation_channel": "semantic",
     "route_signals": ["Spring Boot 3.5 to 4.1 upgrade"],
     "expected_refs": ["references/upgrade-playbook.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/upgrade-plan.schema.json"],
     "forbidden_skills": ["spring-best-practice-review"]
+  },
+  {
+    "id": "upgrade-plan-schema-consumer",
+    "prompt": "Implement a consumer for spring-upgrade-plan/2 JSON using its schema",
+    "expected_skill": "spring-upgrade-planner",
+    "activation_channel": "semantic",
+    "route_signals": ["spring-upgrade-plan/2", "consumer", "schema"],
+    "expected_refs": ["references/upgrade-playbook.md", "references/upgrade-plan.schema.json"],
+    "forbidden_refs": ["references/official-sources.md"],
+    "forbidden_skills": ["spring-evidence-collector"]
   },
   {
     "id": "runtime-performance",
@@ -81,6 +113,7 @@
     "activation_channel": "explicit-name",
     "route_signals": ["spring-evidence-collector", "static repository inventory"],
     "expected_refs": ["references/evidence-contract.md"],
+    "forbidden_refs": ["references/evidence.schema.json", "references/official-sources.md"],
     "forbidden_skills": []
   },
   {
@@ -90,6 +123,7 @@
     "activation_channel": "explicit-name",
     "route_signals": ["spring-upgrade-planner", "staged Boot upgrade"],
     "expected_refs": ["references/upgrade-playbook.md", "references/official-sources.md"],
+    "forbidden_refs": ["references/upgrade-plan.schema.json"],
     "forbidden_skills": []
   },
   {
@@ -158,6 +192,17 @@
     "expected_refs": ["references/core-review-rules.md", "references/web-security-rules.md"],
     "forbidden_refs": ["references/transaction-data-rules.md", "references/kafka-rules.md", "references/architecture-operations-rules.md", "references/spring-core-sources.md"],
     "forbidden_skills": ["spring-security-threat-modeler"]
+  },
+  {
+    "id": "narrow-outbound-webclient-review",
+    "prompt": "Review this outbound WebClient for SSRF controls and request deadlines",
+    "expected_skill": "spring-best-practice-review",
+    "activation_channel": "semantic",
+    "route_signals": ["outbound WebClient", "SSRF", "request deadlines"],
+    "review_routes": ["http-client"],
+    "expected_refs": ["references/core-review-rules.md", "references/http-client-rules.md"],
+    "forbidden_refs": ["references/web-security-rules.md", "references/architecture-operations-rules.md", "references/spring-core-sources.md"],
+    "forbidden_skills": ["spring-security-threat-modeler", "spring-performance-investigator"]
   },
   {
     "id": "narrow-transaction-data-review",

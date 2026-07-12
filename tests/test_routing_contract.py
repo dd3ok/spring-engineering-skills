@@ -70,6 +70,21 @@ class RoutingContractTests(unittest.TestCase):
         )
         self.assertTrue(any("expects and forbids references" in error for error in errors))
 
+    def test_dedicated_skill_case_must_partition_conditional_references(self) -> None:
+        def remove_forbidden(cases: list[dict[str, object]]) -> None:
+            case = next(item for item in cases if item["id"] == "static-evidence")
+            case["forbidden_refs"] = []
+
+        errors = self.validate_modified_cases(remove_forbidden)
+        self.assertTrue(any("exactly partition dedicated-skill references" in error for error in errors))
+
+    def test_conditional_reference_requires_positive_route_coverage(self) -> None:
+        def remove_schema_route(cases: list[dict[str, object]]) -> None:
+            cases[:] = [case for case in cases if case["id"] != "upgrade-plan-schema-consumer"]
+
+        errors = self.validate_modified_cases(remove_schema_route)
+        self.assertTrue(any("references without positive route coverage" in error for error in errors))
+
     def test_review_source_map_swap_violates_machine_readable_policy(self) -> None:
         def swap(cases: list[dict[str, object]]) -> None:
             case = next(item for item in cases if item["id"] == "versioned-postgresql-review-loads-data-sources")

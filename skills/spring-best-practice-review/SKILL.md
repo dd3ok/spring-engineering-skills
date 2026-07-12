@@ -15,17 +15,18 @@ Use this deterministic, additive load order:
 2. For a broad/full review, load `references/web-security-rules.md`, `references/transaction-data-rules.md`, and `references/architecture-operations-rules.md`; for a narrow review, load only the matching core-surface row.
 3. Add every focused row matching a named stack or concern, even after the broad load.
 4. For version-specific behavior, compatibility, migration requirements, or exact links, load only the matching source map rows.
+5. Re-evaluate the additive routes when repository or runtime evidence reveals a stack that the initial request did not name.
 
 | Request area | Route ID | Load |
 | --- | --- | --- |
 | Every Spring review: shared evidence, correctness, security, capacity, operations, and verification gates | `always` | `references/core-review-rules.md` |
 | Broad/full Spring architecture, code, dependencies, or production readiness | `broad` | `references/web-security-rules.md`, `references/transaction-data-rules.md`, `references/architecture-operations-rules.md`; add Kafka only when repository evidence or the request puts it in scope |
-| MVC, WebFlux, core API/HTTP behavior, Spring Security, TLS, certificates | `web` | `references/web-security-rules.md` |
+| Inbound MVC/WebFlux request handling, Spring Security, server TLS, certificates | `web` | `references/web-security-rules.md` |
 | Transactions, concurrency, JDBC/R2DBC, Spring Data JDBC, JPA, Hibernate | `transaction-data` | `references/transaction-data-rules.md` |
 | Kafka producer/consumer, delivery, retry, ordering, transactions | `kafka` | `references/kafka-rules.md` |
 | Portfolio/dependencies, architecture, distributed systems, observability, operations, testing | `architecture-operations` | `references/architecture-operations-rules.md` |
 | Existing migration proposal, implementation, or compatibility-claim review involving Spring, Java/Kotlin, Jakarta, dependencies, build tooling, or runtime behavior; use `spring-upgrade-planner` to select targets and create a staged plan | `migration` | `references/migration-rules.md` |
-| HTTP clients, RestClient, WebClient, HTTP Service Clients, Feign, Reactor Netty, SSRF, deadlines, service-to-service reliability | `http-client` | `references/http-client-rules.md` |
+| Outbound HTTP clients, RestClient, WebClient, HTTP Service Clients, Feign, Reactor Netty, SSRF, deadlines, service-to-service reliability | `http-client` | `references/http-client-rules.md` |
 | Redis cache, RedisTemplate, distributed locks, topology, failover, rate limiting, streams, pub/sub, sessions | `redis` | `references/redis-rules.md` |
 | `@Scheduled`, scheduling, Quartz, task execution, async executors, overlap, distributed schedulers, virtual-thread scheduling | `scheduling` | `references/scheduling-rules.md` |
 | Spring AI, LLM, RAG, ChatClient, vector stores, tool calling, MCP, model evaluation | `spring-ai` | `references/spring-ai-rules.md` |

@@ -19,6 +19,11 @@ EXCLUDED_DIRECTORIES = {
 }
 SECRET_SUFFIXES = {".env", ".jks", ".key", ".keystore", ".p12", ".pfx", ".pem"}
 SECRET_NAMES = {"credentials", "id_rsa", "id_ed25519", "secrets", "settings.xml"}
+SECRET_DIRECTORY_NAMES = {".secrets", "credential", "credentials", "private-keys", "secret", "secrets"}
+SECRET_PATH_TERM = re.compile(
+    r"(?i)(?:^|[._-])(?:secret|secrets|credential|credentials|password|passwords|passwd|"
+    r"token|tokens|api[._-]?key|access[._-]?key|private[._-]?key)(?:[._-]|$)"
+)
 SOURCE_SUFFIXES = {".java", ".kt", ".kts"}
 CONFIG_SUFFIXES = {".properties", ".yaml", ".yml"}
 SOURCE_SIGNALS = (
@@ -40,6 +45,8 @@ GRADLE_PLUGIN = re.compile(r"(?:id\s*\(?\s*[\"']([^\"']+)[\"']\s*\)?|id\s+[\"'](
 GRADLE_PLUGIN_ALIAS = re.compile(
     r"\balias\(\s*libs\.plugins\.([A-Za-z0-9_.-]+)\s*\)(?:\s+apply\s+(false|true))?"
 )
+GRADLE_INCLUDE_START = re.compile(r"^\s*include\b(?!Build\b|Flat\b)\s*(.*)$")
+GRADLE_STRING = re.compile(r"[\"']([^\"']+)[\"']")
 VERSION_LITERAL = re.compile(r"^\d+\.\d+\.\d+(?:-(?:SNAPSHOT|M\d+|RC\d+))?$", re.IGNORECASE)
 MIN_PYTHON = (3, 12)
 
@@ -88,11 +95,12 @@ def is_secret_path(path: Path, root: Path | None = None) -> bool:
         or name.startswith(".env.")
         or path.suffix.casefold() in SECRET_SUFFIXES
         or any(
-            part in SECRET_NAMES
-            or "secret" in part
-            or "credential" in part
-            or "private-key" in part
-            for part in sensitive_parts
+            part in SECRET_DIRECTORY_NAMES
+            for part in sensitive_parts[:-1]
+        )
+        or (
+            path.suffix.casefold() not in SOURCE_SUFFIXES
+            and SECRET_PATH_TERM.search(name) is not None
         )
     )
 
@@ -361,6 +369,67 @@ def parse_gradle(path: Path, root: Path, text: str, facts: list[dict[str, Any]])
     return {"id": project_id, "path": str(Path(label).parent).replace("\\", "/"), "build_system": "gradle", "descriptor": label, "module_ids": []}
 
 
+def parse_gradle_settings(
+    path: Path, root: Path, text: str, gaps: list[dict[str, str]]
+) -> tuple[str, list[str]]:
+    label = posix(path, root)
+    parent = PurePosixPath(Path(label).parent.as_posix())
+    sanitized = strip_gradle_comments(text)
+    module_ids: set[str] = set()
+    lines = sanitized.splitlines()
+    index = 0
+    while index < len(lines):
+        match = GRADLE_INCLUDE_START.match(lines[index])
+        if match is None:
+            index += 1
+            continue
+        arguments = match.group(1).strip()
+        if arguments.startswith("("):
+            depth = arguments.count("(") - arguments.count(")")
+            while depth > 0 and index + 1 < len(lines):
+                index += 1
+                continuation = lines[index].strip()
+                arguments += "\n" + continuation
+                depth += continuation.count("(") - continuation.count(")")
+            if depth != 0 or not arguments.endswith(")"):
+                gaps.append({"kind": "unresolved-gradle-module-include", "path": label})
+                index += 1
+                continue
+            arguments = arguments[1:-1]
+        else:
+            while arguments.rstrip().endswith(",") and index + 1 < len(lines):
+                index += 1
+                arguments += "\n" + lines[index].strip()
+        literals = GRADLE_STRING.findall(arguments or "")
+        remainder = GRADLE_STRING.sub("", arguments or "")
+        if not literals or remainder.strip(" \t\r\n,"):
+            gaps.append({"kind": "unresolved-gradle-module-include", "path": label})
+            index += 1
+            continue
+        for literal in literals:
+            logical = literal.removeprefix(":").replace(":", "/")
+            module = PurePosixPath(logical)
+            if (
+                not logical
+                or "\\" in logical
+                or module.is_absolute()
+                or ".." in module.parts
+                or module.as_posix() != logical
+            ):
+                gaps.append({"kind": "invalid-module-path", "path": label})
+                continue
+            module_ids.add("project:" + (parent / module).as_posix())
+        index += 1
+    if re.search(r"(?m)^\s*includeBuild\b", sanitized):
+        gaps.append({"kind": "unresolved-gradle-composite-build", "path": label})
+    if re.search(r"(?m)^\s*includeFlat\b", sanitized):
+        gaps.append({"kind": "unresolved-gradle-flat-include", "path": label})
+    if re.search(r"\.projectDir\s*=", sanitized):
+        gaps.append({"kind": "unresolved-gradle-projectdir-remap", "path": label})
+    project_path = parent.as_posix()
+    return project_path, sorted(module_ids)
+
+
 def catalog_version(value: object, versions: dict[str, object]) -> tuple[str, str]:
     if isinstance(value, str):
         return value, "declared"
@@ -452,6 +521,7 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
     projects: list[dict[str, Any]] = []
     deployment: list[str] = []
     excluded: list[dict[str, str]] = []
+    gradle_settings: list[tuple[str, str, list[str]]] = []
     for path in files:
         label = posix(path, root)
         if is_secret_path(path, root):
@@ -459,7 +529,7 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
             continue
         name = path.name
         suffix = path.suffix.casefold()
-        relevant = name == "pom.xml" or name in {"build.gradle", "build.gradle.kts", "gradle-wrapper.properties", "libs.versions.toml"} or suffix in CONFIG_SUFFIXES or suffix in SOURCE_SUFFIXES
+        relevant = name == "pom.xml" or name in {"build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradle-wrapper.properties", "libs.versions.toml"} or suffix in CONFIG_SUFFIXES or suffix in SOURCE_SUFFIXES
         if name in {"Dockerfile", "compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml", "Chart.yaml"} or any(part in {"k8s", "kubernetes", "helm"} for part in path.parts):
             deployment.append(label)
             add_fact(facts, kind="deployment.signal", name=name, value="present", certainty="declared",
@@ -475,6 +545,9 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
                 projects.append(project)
         elif name in {"build.gradle", "build.gradle.kts"}:
             projects.append(parse_gradle(path, root, text, facts))
+        elif name in {"settings.gradle", "settings.gradle.kts"}:
+            project_path, module_ids = parse_gradle_settings(path, root, text, gaps)
+            gradle_settings.append((label, project_path, module_ids))
         elif name == "gradle-wrapper.properties":
             match = re.search(r"gradle-([0-9][^-/]*)-(?:bin|all)\.zip", text)
             if match:
@@ -493,6 +566,30 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
                     add_fact(facts, kind="test.signal" if test_path else "code.signal", name=token,
                              value="present", certainty="declared", project_id="project:.", path=label,
                              line=text.count("\n", 0, match.start()) + 1)
+    for descriptor, project_path, module_ids in gradle_settings:
+        matching = [project for project in projects if project["build_system"] == "gradle" and project["path"] == project_path]
+        if matching:
+            for project in matching:
+                project["module_ids"] = module_ids
+        else:
+            projects.append({
+                "id": "project:" + project_path,
+                "path": project_path,
+                "build_system": "gradle",
+                "descriptor": descriptor,
+                "module_ids": module_ids,
+            })
+        existing_ids = {project["id"] for project in projects}
+        for module_id in module_ids:
+            if module_id not in existing_ids:
+                projects.append({
+                    "id": module_id,
+                    "path": module_id.removeprefix("project:"),
+                    "build_system": "gradle",
+                    "descriptor": descriptor,
+                    "module_ids": [],
+                })
+                existing_ids.add(module_id)
     unique_projects = {project["id"] + "|" + project["descriptor"]: project for project in projects}
     if not unique_projects:
         gaps.append({"kind": "no-build-descriptor", "path": "."})
@@ -541,7 +638,10 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "repository": {"root": "."},
-        "collection": {"collector_version": "0.1.0", "mode": "static", "network_used": False, "build_executed": False},
+        "collection": {
+            "collector_version": "0.1.0", "mode": "static", "network_used": False,
+            "build_executed": False, "provenance": None,
+        },
         "projects": sorted(unique_projects.values(), key=lambda item: (item["path"], item["descriptor"])),
         "facts": facts,
         "conflicts": conflicts,
