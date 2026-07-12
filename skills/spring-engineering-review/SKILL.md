@@ -1,9 +1,9 @@
 ---
-name: spring-best-practice-review
-description: 'Reviews Spring source, configuration, dependencies, architecture, and production-readiness risks. Use for evidence-ranked static reviews of code, configuration, migration claims, and capacity design; use dedicated skills for upgrade-plan creation, runtime diagnosis, threat models, test backlogs, or Modulith verification. Do not use for ordinary Spring questions.'
+name: spring-engineering-review
+description: 'Use this skill when the user asks for an evidence-ranked static engineering review of a Spring or Spring Boot repository, code, configuration, dependencies, architecture, security controls, data or messaging design, production readiness, existing migration claims, or static capacity design against engineering best practices. Do not use it to create upgrade plans, diagnose runtime artifacts, build threat models, plan test backlogs, verify Modulith graphs, or answer ordinary Spring questions.'
 ---
 
-# Spring Best Practice Review
+# Spring Engineering Review
 
 Act as a senior Spring and Spring Boot architecture reviewer. Optimize for correctness, operability, maintainability, and clear tradeoffs over fashionable framework use.
 

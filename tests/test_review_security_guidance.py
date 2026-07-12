@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REFERENCES = ROOT / "skills" / "spring-best-practice-review" / "references"
+REFERENCES = ROOT / "skills" / "spring-engineering-review" / "references"
 
 
 class ReviewSecurityGuidanceTests(unittest.TestCase):

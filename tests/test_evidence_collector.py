@@ -395,6 +395,7 @@ class EvidenceCollectorTests(unittest.TestCase):
         for build_text in (
             "plugins { /* alias(libs.plugins.boot) */ java }\n",
             "plugins { alias(libs.plugins.boot) apply false }\n",
+            "plugins { alias(libs.plugins.boot) apply(false) }\n",
         ):
             with self.subTest(build_text=build_text), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
@@ -407,6 +408,179 @@ class EvidenceCollectorTests(unittest.TestCase):
                 (root / "build.gradle.kts").write_text(build_text, encoding="utf-8")
                 result = collector.collect(root, 100, 100_000)
             self.assertFalse(any(fact["kind"] == "platform.version" and fact["value"] == "9.9.9" for fact in result["facts"]))
+
+    def test_direct_boot_plugin_apply_false_is_not_promoted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot") version "4.1.0" apply false }\n',
+                encoding="utf-8",
+            )
+            result = collector.collect(root, 100, 100_000)
+
+        self.assertTrue(any(
+            fact["kind"] == "plugin.version"
+            and fact["name"] == "org.springframework.boot"
+            and fact["value"] == "4.1.0"
+            for fact in result["facts"]
+        ))
+        self.assertFalse(any(fact["kind"] == "platform.version" for fact in result["facts"]))
+        self.assertEqual(validator.validate(result), [])
+
+    def test_root_boot_plugin_declaration_is_attributed_when_child_applies_it(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "settings.gradle.kts").write_text('include("app", "library")\n', encoding="utf-8")
+            (root / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot") version "4.1.0" apply false }\n',
+                encoding="utf-8",
+            )
+            app = root / "app"
+            app.mkdir()
+            (app / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot") }\n', encoding="utf-8"
+            )
+            library = root / "library"
+            library.mkdir()
+            (library / "build.gradle.kts").write_text("plugins { java }\n", encoding="utf-8")
+
+            result = collector.collect(root, 100, 100_000)
+
+        platform_facts = [fact for fact in result["facts"] if fact["kind"] == "platform.version"]
+        self.assertEqual(len(platform_facts), 1)
+        self.assertEqual(platform_facts[0]["project_id"], "project:app")
+        self.assertEqual(platform_facts[0]["value"], "4.1.0")
+        self.assertEqual(platform_facts[0]["declaration_role"], "applied-root-plugin-declaration")
+        self.assertEqual(platform_facts[0]["scope"], "declared-at:build.gradle.kts")
+        self.assertEqual(validator.validate(result), [])
+
+    def test_unversioned_child_apply_false_is_not_promoted(self) -> None:
+        for child_declaration in (
+            'id("org.springframework.boot") apply false',
+            'id("org.springframework.boot").apply(false)',
+        ):
+            with self.subTest(child_declaration=child_declaration), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "settings.gradle.kts").write_text('include("app")\n', encoding="utf-8")
+                (root / "build.gradle.kts").write_text(
+                    'plugins { id("org.springframework.boot") version "4.1.0" apply false }\n',
+                    encoding="utf-8",
+                )
+                app = root / "app"
+                app.mkdir()
+                (app / "build.gradle.kts").write_text(
+                    f"plugins {{ {child_declaration} }}\n", encoding="utf-8"
+                )
+                result = collector.collect(root, 100, 100_000)
+
+            self.assertFalse(any(fact["kind"] == "platform.version" for fact in result["facts"]))
+            self.assertEqual(validator.validate(result), [])
+
+    def test_plugin_method_syntax_is_collected_without_false_application(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot").version("4.1.0").apply(false)\n'
+                '  kotlin("jvm").version("2.3.21").apply(false) }\n',
+                encoding="utf-8",
+            )
+            result = collector.collect(root, 100, 100_000)
+
+        versions = {
+            (fact["name"], fact["value"])
+            for fact in result["facts"]
+            if fact["kind"] == "plugin.version"
+        }
+        self.assertIn(("org.springframework.boot", "4.1.0"), versions)
+        self.assertIn(("org.jetbrains.kotlin.jvm", "2.3.21"), versions)
+        self.assertFalse(any(fact["kind"] == "platform.version" for fact in result["facts"]))
+        self.assertEqual(validator.validate(result), [])
+
+    def test_version_catalog_aliases_do_not_cross_independent_builds(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for build_name, boot_version in (("a", "3.5.16"), ("b", "4.1.0")):
+                build = root / build_name
+                catalog = build / "gradle" / "libs.versions.toml"
+                catalog.parent.mkdir(parents=True)
+                (build / "settings.gradle.kts").write_text(
+                    f'rootProject.name = "{build_name}"\n', encoding="utf-8"
+                )
+                (build / "build.gradle.kts").write_text(
+                    "plugins { alias(libs.plugins.boot) }\n", encoding="utf-8"
+                )
+                catalog.write_text(
+                    f'[versions]\nboot = "{boot_version}"\n'
+                    '[plugins]\nboot = { id = "org.springframework.boot", version.ref = "boot" }\n',
+                    encoding="utf-8",
+                )
+
+            result = collector.collect(root, 100, 100_000)
+
+        platform = {
+            fact["project_id"]: fact["value"]
+            for fact in result["facts"]
+            if fact["kind"] == "platform.version"
+        }
+        self.assertEqual(platform, {"project:a": "3.5.16", "project:b": "4.1.0"})
+        self.assertEqual(result["conflicts"], [])
+        self.assertEqual(validator.validate(result), [])
+
+    def test_settings_only_module_owns_its_source_facts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "settings.gradle.kts").write_text('include("app")\n', encoding="utf-8")
+            (root / "build.gradle.kts").write_text("plugins { java }\n", encoding="utf-8")
+            source = root / "app" / "src" / "main" / "java" / "Api.java"
+            source.parent.mkdir(parents=True)
+            source.write_text("@RestController class Api {}\n", encoding="utf-8")
+
+            result = collector.collect(root, 100, 100_000)
+
+        signal = next(fact for fact in result["facts"] if fact["kind"] == "code.signal")
+        self.assertEqual(signal["project_id"], "project:app")
+        self.assertEqual(validator.validate(result), [])
+
+    def test_root_plugin_declaration_does_not_cross_nested_build_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "settings.gradle.kts").write_text('rootProject.name = "outer"\n', encoding="utf-8")
+            (root / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot") version "4.1.0" apply false }\n',
+                encoding="utf-8",
+            )
+            nested = root / "nested"
+            nested.mkdir()
+            (nested / "settings.gradle.kts").write_text(
+                'rootProject.name = "nested"\n', encoding="utf-8"
+            )
+            (nested / "build.gradle.kts").write_text(
+                'plugins { id("org.springframework.boot") }\n', encoding="utf-8"
+            )
+
+            result = collector.collect(root, 100, 100_000)
+
+        self.assertFalse(any(fact["kind"] == "platform.version" for fact in result["facts"]))
+        self.assertEqual(validator.validate(result), [])
+
+    def test_kotlin_dsl_plugin_shorthand_is_collected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "build.gradle.kts").write_text(
+                'plugins {\n  kotlin("jvm") version "2.3.21"\n'
+                '  kotlin("plugin.spring") version "2.3.21" apply false\n}\n',
+                encoding="utf-8",
+            )
+            result = collector.collect(root, 100, 100_000)
+
+        kotlin_plugins = {
+            (fact["name"], fact["value"])
+            for fact in result["facts"]
+            if fact["kind"] == "plugin.version"
+        }
+        self.assertIn(("org.jetbrains.kotlin.jvm", "2.3.21"), kotlin_plugins)
+        self.assertIn(("org.jetbrains.kotlin.plugin.spring", "2.3.21"), kotlin_plugins)
+        self.assertEqual(validator.validate(result), [])
 
     def test_maven_plugin_roles_are_preserved(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

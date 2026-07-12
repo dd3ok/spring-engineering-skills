@@ -2,6 +2,8 @@
 
 A vendor-neutral, evidence-driven suite for Spring and Spring Boot best practices: repository review, upgrade planning, performance investigation, threat modeling, test-gap analysis, and Spring Modulith audits.
 
+Current release: **0.1.0 (public beta)**. The skill contents and deterministic scripts are licensed under the [Apache License 2.0](LICENSE).
+
 [한국어 문서](README.ko.md)
 
 The repository packages seven independent skills under `skills/`. Each skill owns one workflow, loads only the references needed for that workflow, and can be installed without a plugin, marketplace manifest, or host-specific metadata.
@@ -26,7 +28,7 @@ This suite addresses those problems with:
 | --- | --- | --- |
 | [`spring-evidence-collector`](skills/spring-evidence-collector/) | Redacted, read-only inventory of Spring builds, versions, configuration keys, source/test signals, modules, and deployment artifacts | Deterministic `spring-evidence/1` JSON |
 | [`spring-upgrade-planner`](skills/spring-upgrade-planner/) | Evidence-backed Spring Boot, Spring Cloud, Java/Kotlin, Maven, and Gradle migration planning | Staged `spring-upgrade-plan/2` with compatibility gates and rollback |
-| [`spring-best-practice-review`](skills/spring-best-practice-review/) | Broad or focused static review of Spring source, configuration, architecture, dependencies, security, data, messaging, and operations | Evidence-ranked findings and remediation steps |
+| [`spring-engineering-review`](skills/spring-engineering-review/) | Broad or focused static review of Spring source, configuration, architecture, dependencies, security, data, messaging, and operations | Evidence-ranked findings and remediation steps |
 | [`spring-performance-investigator`](skills/spring-performance-investigator/) | Causal diagnosis from JFR, metrics, traces, profiles, logs, and controlled experiments | Ranked hypotheses, confirmed bottlenecks, and experiment plan |
 | [`spring-security-threat-modeler`](skills/spring-security-threat-modeler/) | Trust boundaries, abuse paths, controls, and residual risk across HTTP, reactive, messaging, data, management, and outbound surfaces | Threat register and testable security acceptance criteria |
 | [`spring-test-gap-planner`](skills/spring-test-gap-planner/) | Production risks and change surfaces mapped to missing or unverified tests | Risk-ranked test-gap matrix with fixtures and CI placement |
@@ -42,7 +44,7 @@ There is no umbrella `spring` dispatcher skill. Install all seven peer skills an
 
 ```text
 Use spring-evidence-collector to collect a safe static inventory of this repository.
-Use spring-best-practice-review to review this Spring service for production readiness.
+Use spring-engineering-review to review this Spring service for production readiness.
 Use spring-upgrade-planner to plan a reversible Spring Boot upgrade from the evidence pack.
 Use spring-performance-investigator to correlate this JFR recording with Micrometer latency.
 Use spring-security-threat-modeler to model trust boundaries for this multi-tenant API.
@@ -119,6 +121,18 @@ tests/                   # unit, contract, security, and adversarial tests
 
 All deterministic scripts require Python 3.12 or newer and use only the Python standard library.
 
+## Compatibility and versioning
+
+| Surface | Current contract |
+| --- | --- |
+| Suite release | `0.1.0` (public beta) |
+| Skill format | [Agent Skills specification](https://agentskills.io/specification) |
+| Deterministic scripts | Python 3.12 or newer |
+| Evidence artifact | `spring-evidence/1` |
+| Upgrade-plan artifact | `spring-upgrade-plan/2` |
+
+Before `1.0.0`, skill names and schemas may change when routing evidence or safety requirements justify it; such breaking changes increment the minor version, while fixes increment the patch version. From `1.0.0`, incompatible public-contract changes increment the major version and backward-compatible behavior increments the minor version.
+
 ## Validation
 
 Run the complete offline validation suite:
@@ -134,6 +148,7 @@ It checks:
 - exact routing/reference partitions and behavior-case contracts;
 - evidence and upgrade schema semantics;
 - malformed, oversized, stale, future-dated, secret-bearing, and adversarial inputs;
+- checked-in Maven reactor and Gradle Groovy/Kotlin multi-project evidence fixtures;
 - the complete unit-test suite;
 - internal Markdown links.
 
@@ -183,3 +198,7 @@ python scripts/check_links.py --online --retries 2
 ```
 
 The structure follows the [Agent Skills specification](https://agentskills.io/specification).
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE). No `NOTICE` file is currently included; preserve any required third-party attribution notices if they are introduced later.
