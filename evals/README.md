@@ -6,6 +6,8 @@
 
 Host runtimes differ in discovery and activation. Test semantic routing and named selection separately, and record host behavior as an observation rather than a portable skill guarantee.
 
+The 0.1.0 pre-release used 12 fresh Codex/GPT-5 tasks as a one-pass route-label classification smoke: eight single-skill requests, two non-activation requests, and two evidence-first handoffs. All 12 self-reported the intended label after the expected label was withheld; three fresh checks after the final description edit also matched. The compact [observation record](route-label-smoke-2026-07-12.json) preserves the expected and observed labels. This is useful rename and boundary evidence, but it is not a host activation trace, a repeated statistical evaluation, or a portable accuracy guarantee.
+
 ## Observed Model Routing
 
 Installed skills expose their `name` and `description` metadata to a supporting host. A host may choose a matching skill implicitly; exact-name invocation remains the deterministic option when a task is ambiguous or the workflow is high risk. This repository has seven peer skills and no umbrella dispatcher skill.
@@ -19,9 +21,9 @@ python scripts/score_routing_results.py --emit-prompts dist/routing-prompts.json
 Run each prompt in a fresh task with all seven skills installed. Record the skill selected by the host's trace or skill-activation signal, not a textual guess in the model answer. Use `null` when no skill was selected:
 
 ```json
-{"case_id":"broad-review","selected_skill":"spring-best-practice-review","host":"codex","model":"record-the-observed-model"}
+{"case_id":"broad-review","selected_skill":"spring-engineering-review","host":"codex","model":"record-the-observed-model"}
 {"case_id":"ordinary-spring-question","selected_skill":null,"host":"codex","model":"record-the-observed-model"}
-{"case_id":"korean-compound-evidence-first","selected_skill":"spring-evidence-collector","handoff_skills":["spring-best-practice-review"],"host":"codex","model":"record-the-observed-model"}
+{"case_id":"korean-compound-evidence-first","selected_skill":"spring-evidence-collector","handoff_skills":["spring-engineering-review"],"host":"codex","model":"record-the-observed-model"}
 ```
 
 `selected_skill` is the initial owner used for routing accuracy. Record later peer-skill transitions in the optional `handoff_skills` array. Store one JSON object per line, then score the run:

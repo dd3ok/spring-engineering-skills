@@ -1,0 +1,36 @@
+{
+  "schema_version": "spring-route-label-smoke/1",
+  "run_id": "codex-gpt5-2026-07-12-pre-0.1.0",
+  "date": "2026-07-12",
+  "host": "Codex desktop",
+  "model_family": "GPT-5",
+  "method": "Fresh-context self-reported route labels with expected labels withheld; not a host activation trace.",
+  "summary": {
+    "initial_evaluated": 12,
+    "initial_matching_labels": 12,
+    "single_skill": 8,
+    "non_activation": 2,
+    "compound_handoff": 2,
+    "post_description_checks": 3,
+    "post_description_matching_labels": 3,
+    "total_evaluated": 15,
+    "total_matching_labels": 15
+  },
+  "results": [
+    {"id": "route-01-broad-review-ko", "expected": ["spring-engineering-review"], "observed": ["spring-engineering-review"]},
+    {"id": "route-02-upgrade-en", "expected": ["spring-upgrade-planner"], "observed": ["spring-upgrade-planner"]},
+    {"id": "route-03-runtime-performance-en", "expected": ["spring-performance-investigator"], "observed": ["spring-performance-investigator"]},
+    {"id": "route-04-threat-model-ko", "expected": ["spring-security-threat-modeler"], "observed": ["spring-security-threat-modeler"]},
+    {"id": "route-05-test-gap-en", "expected": ["spring-test-gap-planner"], "observed": ["spring-test-gap-planner"]},
+    {"id": "route-06-modulith-ko", "expected": ["spring-modulith-auditor"], "observed": ["spring-modulith-auditor"]},
+    {"id": "route-07-evidence-en", "expected": ["spring-evidence-collector"], "observed": ["spring-evidence-collector"]},
+    {"id": "route-08-ordinary-question-ko", "expected": [], "observed": []},
+    {"id": "route-09-unspecified-cve-en", "expected": [], "observed": []},
+    {"id": "route-10-evidence-review-ko", "expected": ["spring-evidence-collector", "spring-engineering-review"], "observed": ["spring-evidence-collector", "spring-engineering-review"]},
+    {"id": "route-11-evidence-upgrade-en", "expected": ["spring-evidence-collector", "spring-upgrade-planner"], "observed": ["spring-evidence-collector", "spring-upgrade-planner"]},
+    {"id": "route-12-broad-review-ko", "expected": ["spring-engineering-review"], "observed": ["spring-engineering-review"]},
+    {"id": "post-description-broad-review-ko", "expected": ["spring-engineering-review"], "observed": ["spring-engineering-review"]},
+    {"id": "post-description-ordinary-question-ko", "expected": [], "observed": []},
+    {"id": "post-description-upgrade-en", "expected": ["spring-upgrade-planner"], "observed": ["spring-upgrade-planner"]}
+  ]
+}

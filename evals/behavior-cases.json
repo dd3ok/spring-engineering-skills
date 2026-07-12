@@ -57,7 +57,7 @@
   },
   {
     "id": "review-static-cache-boundary",
-    "skill": "spring-best-practice-review",
+    "skill": "spring-engineering-review",
     "artifact_mode": "synthetic-inline",
     "prompt": "Review source-only Redis cache stampede controls and pool configuration. No runtime artifacts are available and no performance diagnosis was requested.",
     "must": ["Perform a conditional static risk review", "Distinguish configuration risk from measured bottleneck", "Recommend verification evidence"],
