@@ -21,11 +21,15 @@ class SpringProjectLifecycleTests(unittest.TestCase):
         )
 
     @staticmethod
-    def active_card(*, locator: str = "/projects/spring-webflow") -> str:
+    def active_card(
+        *,
+        name: str = "Spring Web Flow",
+        locator: str = "/projects/spring-webflow",
+    ) -> str:
         return f"""
             <article class="column is-4">
               <a class="box is-special item" href="{locator}">
-                <div><h1 class="is-size-4">Spring Web Flow</h1></div>
+                <div><h1 class="is-size-4">{name}</h1></div>
                 <p>Project description outside the heading.</p>
               </a>
             </article>
@@ -46,7 +50,12 @@ class SpringProjectLifecycleTests(unittest.TestCase):
         before: str = "",
         after: str = "",
     ) -> bytes:
-        active_html = self.active_card() if active is None else active
+        active_html = (
+            self.active_card()
+            + self.active_card(name="Spring Shell", locator="/projects/spring-shell")
+            if active is None
+            else active
+        )
         attic_html = (
             self.attic_card(
                 "Spring Cloud Contract",
@@ -89,7 +98,8 @@ class SpringProjectLifecycleTests(unittest.TestCase):
             "Spring Cloud Contract",
             "https://github.com/spring-cloud/spring-cloud-contract",
         )
-        payload = self.page(active="", attic=attic)
+        shell = self.active_card(name="Spring Shell", locator="/projects/spring-shell")
+        payload = self.page(active=shell, attic=attic)
         errors = check_spring_project_lifecycle.page_errors(self.catalog, payload)
         self.assertTrue(any("Spring Web Flow expected active" in error for error in errors))
 
@@ -100,8 +110,9 @@ class SpringProjectLifecycleTests(unittest.TestCase):
         self.assertEqual(errors, ["Spring projects page Attic boundary changed or disappeared"])
 
     def test_plain_text_or_wrong_link_cannot_satisfy_a_project_claim(self) -> None:
+        shell = self.active_card(name="Spring Shell", locator="/projects/spring-shell")
         payload = self.page(
-            active=self.active_card(locator="/unrelated"),
+            active=self.active_card(locator="/unrelated") + shell,
             before="<script>const label = 'Spring Web Flow';</script>",
         )
         errors = check_spring_project_lifecycle.page_errors(self.catalog, payload)
@@ -109,8 +120,9 @@ class SpringProjectLifecycleTests(unittest.TestCase):
 
     def test_navigation_link_cannot_replace_active_project_card(self) -> None:
         navigation = '<nav><a href="/projects/spring-webflow">Spring Web Flow</a></nav>'
+        shell = self.active_card(name="Spring Shell", locator="/projects/spring-shell")
         errors = check_spring_project_lifecycle.page_errors(
-            self.catalog, self.page(active="", before=navigation)
+            self.catalog, self.page(active=shell, before=navigation)
         )
         self.assertTrue(any("Spring Web Flow expected active" in error for error in errors))
 

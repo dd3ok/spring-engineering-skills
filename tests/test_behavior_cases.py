@@ -28,6 +28,52 @@ class BehaviorCaseTests(unittest.TestCase):
                 errors = validate_behavior_cases.validate_cases()
         self.assertTrue(any("contradicts itself" in error for error in errors))
 
+    def test_repository_fixture_cases_bind_existing_safe_directories(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        repository_cases = [
+            case for case in cases if case.get("artifact_mode") == "repository-fixture"
+        ]
+        self.assertEqual(
+            {case["id"] for case in repository_cases},
+            {
+                "korean-existing-application-fix",
+                "developer-greenfield-unpinned-version",
+            },
+        )
+        for case in repository_cases:
+            self.assertEqual(
+                validate_behavior_cases.repository_fixture_errors(
+                    case["id"], case.get("fixture_path")
+                ),
+                [],
+            )
+
+    def test_repository_fixture_rejects_missing_or_escaping_paths(self) -> None:
+        self.assertTrue(
+            any(
+                "requires fixture_path" in error
+                for error in validate_behavior_cases.repository_fixture_errors("case", None)
+            )
+        )
+        self.assertTrue(
+            any(
+                "invalid fixture_path" in error
+                for error in validate_behavior_cases.repository_fixture_errors(
+                    "case", "evals/fixtures/../behavior-cases.json"
+                )
+            )
+        )
+
+    def test_non_repository_case_cannot_declare_a_fixture(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        cases[0]["fixture_path"] = "evals/fixtures/developer-greenfield-unpinned-version"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("requires repository-fixture mode" in error for error in errors))
+
     def test_unhashable_rubric_items_return_validation_errors(self) -> None:
         cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
         cases[0]["must"] = [["nested"]]

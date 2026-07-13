@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -68,6 +69,24 @@ class ApplicationDeveloperTests(unittest.TestCase):
         planner, _ = parse_frontmatter(ROOT / "skills" / "spring-upgrade-planner" / "SKILL.md")
         self.assertIn("as the primary output", planner["description"])
         self.assertIn("incidental to a requested greenfield implementation", planner["description"])
+        self.assertIn("resolve it to an exact GA", self.playbook)
+        self.assertIn("Spring Initializr metadata", self.playbook)
+        sources = (
+            self.root / "references" / "official-sources.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("https://start.spring.io/metadata/client", sources)
+
+    def test_unpinned_greenfield_behavior_requires_implementation_not_refusal(self) -> None:
+        cases = json.loads((ROOT / "evals" / "behavior-cases.json").read_text(encoding="utf-8"))
+        case = next(
+            item for item in cases if item["id"] == "developer-greenfield-unpinned-version"
+        )
+        self.assertEqual(case["artifact_mode"], "repository-fixture")
+        self.assertTrue(any("continue implementation" in item for item in case["must"]))
+        self.assertIn(
+            "Stop solely because the prompt does not pin an exact version",
+            case["must_not"],
+        )
 
 
 if __name__ == "__main__":

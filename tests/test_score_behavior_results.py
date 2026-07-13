@@ -140,6 +140,65 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "invalid must_results"):
                 score_behavior_results.load_results(path)
 
+    def test_repository_fixture_requires_non_empty_with_skill_workspace_evidence(self) -> None:
+        cases = {
+            "case": {
+                **self.cases["case"],
+                "artifact_mode": "repository-fixture",
+            }
+        }
+        missing = self.result("with-1", "with-skill")
+        _, errors = score_behavior_results.score_results(
+            cases, [missing], require_complete=False
+        )
+        self.assertTrue(any("lacks workspace evidence" in error for error in errors))
+
+        empty = self.result("with-2", "with-skill")
+        empty["workspace_diff_sha256"] = score_behavior_results.EMPTY_WORKSPACE_DIFF_SHA256
+        empty["changed_paths"] = []
+        _, errors = score_behavior_results.score_results(cases, [empty], require_complete=False)
+        self.assertTrue(any("has no changes" in error for error in errors))
+
+    def test_repository_fixture_accepts_bound_changes_and_empty_baseline(self) -> None:
+        cases = {
+            "case": {
+                **self.cases["case"],
+                "artifact_mode": "repository-fixture",
+            }
+        }
+        with_skill = self.result("with-1", "with-skill")
+        with_skill["workspace_diff_sha256"] = "c" * 64
+        with_skill["changed_paths"] = ["src/main/java/example/Application.java"]
+        baseline = self.result("without-1", "without-skill")
+        baseline["workspace_diff_sha256"] = "d" * 64
+        baseline["changed_paths"] = []
+        _, errors = score_behavior_results.score_results(
+            cases,
+            [with_skill, baseline],
+            expected_with_skill_runs=1,
+            expected_without_skill_runs=1,
+        )
+        self.assertEqual(errors, [])
+
+    def test_non_fixture_result_rejects_workspace_evidence(self) -> None:
+        record = self.result("with-1", "with-skill")
+        record["workspace_diff_sha256"] = "c" * 64
+        record["changed_paths"] = ["src/main/java/example/Application.java"]
+        _, errors = score_behavior_results.score_results(
+            self.cases, [record], require_complete=False
+        )
+        self.assertTrue(any("non-fixture result" in error for error in errors))
+
+    def test_workspace_evidence_paths_are_portable_strings(self) -> None:
+        record = self.result("with-1", "with-skill")
+        record["workspace_diff_sha256"] = "c" * 64
+        record["changed_paths"] = [["nested"]]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "results.jsonl"
+            path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "invalid changed_paths"):
+                score_behavior_results.load_results(path)
+
     def test_strict_release_rejects_custom_case_suite(self) -> None:
         with self.assertRaisesRegex(ValueError, "canonical behavior case suite"):
             score_behavior_results.require_canonical_cases(self.cases, {})

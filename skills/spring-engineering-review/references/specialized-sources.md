@@ -52,6 +52,6 @@ Checked on: 2026-07-13. Use this map for discovery, then cite the exact versione
 - Spring REST Docs reference: https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/
 - Spring Web Services project page: https://spring.io/projects/spring-ws/
 - Spring Web Services reference: https://docs.spring.io/spring-ws/docs/current/reference/html/
-- Spring Shell project page: https://spring.io/projects/spring-shell/
+- Spring Shell project page (active project): https://spring.io/projects/spring-shell/
 - Spring Shell reference: https://docs.spring.io/spring-shell/reference/
 - Spring Web Flow project page (active project): https://spring.io/projects/spring-webflow/

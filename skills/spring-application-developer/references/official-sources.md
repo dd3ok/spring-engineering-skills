@@ -3,6 +3,7 @@
 Checked on: 2026-07-13. Use these pages for discovery, then cite the exact versioned reference or release note that supports a version-sensitive implementation choice.
 
 - Spring Initializr: https://start.spring.io/
+- Spring Initializr metadata: https://start.spring.io/metadata/client
 - Spring Boot project page: https://spring.io/projects/spring-boot/
 - Spring Boot system requirements: https://docs.spring.io/spring-boot/system-requirements.html
 - Spring Boot reference: https://docs.spring.io/spring-boot/reference/

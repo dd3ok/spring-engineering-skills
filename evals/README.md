@@ -4,6 +4,14 @@
 
 `behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A behavior case passing once is a smoke test, not a statistical quality claim.
 
+For `repository-fixture` cases, copy the declared `fixture_path` to a fresh temporary workspace and run the agent there. Preserve both trees for grading, then bind the actual file changes to the result with the standard-library capture tool:
+
+```text
+python scripts/capture_behavior_artifact.py --case-id <case-id> --fixture <fixture-path> --workspace <workspace-path> --output <manifest.json>
+```
+
+The independent grader receives the raw response, fixture, resulting workspace, and manifest. Copy `workspace_diff_sha256` and `changed_paths` from the manifest into the result record. A `with-skill` repository-fixture run is invalid when `changed_paths` is empty; a baseline run may record an empty diff. Keep manifests and workspaces outside Git and do not expose them to later generation runs.
+
 The behavior suite includes Korean prompts for evidence restraint, threat modeling, upgrade ambiguity, and bounded implementation. A Korean prompt declares `response_language: ko` and includes a Korean-response rubric item. Keep at least two such cases so localized output behavior does not silently fall out of the contract.
 
 Host runtimes differ in discovery and activation. Test semantic routing and named selection separately, and record host behavior as an observation rather than a portable skill guarantee.
@@ -39,6 +47,12 @@ For output evaluation, run each `behavior-cases.json` prompt without exposing it
 
 ```json
 {"case_id":"review-web-security","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
+```
+
+Repository-fixture results additionally bind a non-empty workspace change:
+
+```json
+{"case_id":"korean-existing-application-fix","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","workspace_diff_sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","changed_paths":["src/main/java/com/example/orders/OrderBatchService.java","src/test/java/com/example/orders/OrderBatchServiceTest.java"],"grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
 ```
 
 ```text

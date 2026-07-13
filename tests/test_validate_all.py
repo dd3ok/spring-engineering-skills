@@ -21,7 +21,11 @@ class ValidateAllTests(unittest.TestCase):
         self.assertIn("python scripts/validate_all.py", workflow)
         self.assertIn("python -m ruff check scripts tests skills", workflow)
         self.assertIn("name: windows-smoke", workflow)
-        self.assertIn("python -m unittest tests.test_skill_structure tests.test_check_links tests.test_evidence_collector", workflow)
+        self.assertIn(
+            "python -m unittest tests.test_skill_structure tests.test_check_links "
+            "tests.test_evidence_collector tests.test_spring_project_lifecycle",
+            workflow,
+        )
         self.assertIn("-r .github/requirements-ci.txt", workflow)
         self.assertNotIn("check_links.py --online", workflow)
         self.assertNotIn("matrix:", workflow)

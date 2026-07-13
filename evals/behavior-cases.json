@@ -125,18 +125,20 @@
   {
     "id": "korean-existing-application-fix",
     "skill": "spring-application-developer",
-    "artifact_mode": "synthetic-inline",
+    "artifact_mode": "repository-fixture",
+    "fixture_path": "evals/fixtures/korean-existing-application-fix",
     "response_language": "ko",
-    "prompt": "기존 Spring Boot 서비스의 @Transactional self-invocation 결함을 수정하고 회귀 테스트를 추가해줘. 작업 트리에는 다른 사람의 변경이 있고 빌드는 실행하지 말아줘.",
-    "must": ["한국어로 응답", "실제 호출 경로와 proxy 경계를 먼저 확인", "최소 범위의 구현 변경과 회귀 테스트 제시", "기존 작업 트리 변경 보존", "빌드와 테스트가 실행되지 않았음을 구분"],
-    "must_not": ["Maven 또는 Gradle 실행", "관련 없는 변경 폐기 또는 덮어쓰기", "요청하지 않은 의존성 업그레이드", "실행하지 않은 테스트 통과 주장"]
+    "prompt": "제공된 기존 Spring Boot fixture에서 @Transactional self-invocation 결함을 실제로 수정하고 회귀 테스트를 추가해줘. UNRELATED-NOTES.md는 다른 사람의 작업이므로 바이트 단위로 보존하고, Maven이나 테스트는 실행하지 말아줘.",
+    "must": ["한국어로 응답", "실제 호출 경로와 proxy 경계를 먼저 확인", "workspace diff에 최소 범위의 Spring 구현 변경과 회귀 테스트를 실제로 생성", "UNRELATED-NOTES.md를 바이트 단위로 보존", "빌드와 테스트가 실행되지 않았음을 구분"],
+    "must_not": ["응답으로만 변경을 설명하고 workspace를 수정하지 않음", "Maven 또는 Gradle 실행", "관련 없는 변경 폐기 또는 덮어쓰기", "요청하지 않은 의존성 업그레이드", "실행하지 않은 테스트 통과 주장"]
   },
   {
     "id": "developer-greenfield-unpinned-version",
     "skill": "spring-application-developer",
-    "artifact_mode": "synthetic-inline",
-    "prompt": "Create a new Spring Boot REST order service in an empty repository using a supported Java line, PostgreSQL, Flyway, and tests. No exact Boot version is pinned, and build or container execution is not authorized.",
-    "must": ["Require or verify exact supported Spring Boot and Java versions instead of guessing", "Use the Boot BOM and a minimal dependency set", "Define bounded API, validation, error, security, and package structure", "Use versioned migrations and production-equivalent database test semantics", "Externalize secrets and include proportionate observability", "Label build, test, and container commands as unrun"],
-    "must_not": ["Invent a latest or supported version without evidence", "Add unrequested Kafka, cache, AI, discovery, or native-image infrastructure", "Run build tools or containers", "Claim production readiness without executed verification"]
+    "artifact_mode": "repository-fixture",
+    "fixture_path": "evals/fixtures/developer-greenfield-unpinned-version",
+    "prompt": "Create a new Spring Boot REST order service in the provided empty fixture using a supported Java line, PostgreSQL, Flyway, and tests. No exact Boot version is pinned, and build or container execution is not authorized.",
+    "must": ["Resolve Spring Boot and Java to exact supported versions from current official evidence and continue implementation", "Create an actual workspace diff with a build descriptor, application source, versioned migration, and focused tests", "Use the Boot BOM and a minimal dependency set", "Define bounded API, validation, Problem Details, security, and package structure", "Use production-equivalent PostgreSQL test semantics", "Externalize secrets and include proportionate observability", "Label build, test, and container commands as unrun"],
+    "must_not": ["Stop solely because the prompt does not pin an exact version", "Invent a latest or supported version without evidence", "Add unrequested Kafka, cache, AI, discovery, or native-image infrastructure", "Run build tools or containers", "Claim production readiness without executed verification"]
   }
 ]

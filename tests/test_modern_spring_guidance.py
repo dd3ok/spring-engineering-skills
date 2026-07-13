@@ -82,9 +82,12 @@ class ModernSpringGuidanceTests(unittest.TestCase):
             (ROOT / "evals" / "spring-project-lifecycle.json").read_text(encoding="utf-8")
         )
         statuses = {claim["project_name"]: claim["status"] for claim in catalog["claims"]}
+        self.assertEqual(statuses["Spring Shell"], "active")
         self.assertEqual(statuses["Spring Web Flow"], "active")
         self.assertEqual(statuses["Spring Cloud Contract"], "attic")
+        self.assertIn("Spring Shell as an active", skill)
         self.assertIn("Spring Web Flow as an active", skill)
+        self.assertIn("Spring Shell project page (active project)", specialized)
         self.assertIn("Spring Web Flow project page (active project)", specialized)
         self.assertIn("Spring Cloud Contract", test_sources)
         self.assertIn("Projects in the Attic", test_sources)
