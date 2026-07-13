@@ -2,7 +2,11 @@
 
 Focused, vendor-neutral [Agent Skills](https://agentskills.io/specification) for evidence-led Spring and Spring Boot engineering. The suite covers Spring best-practice reviews, repository evidence, upgrades, performance, security, testing, and Modulith boundaries without bundling everything into one oversized skill.
 
-Current release: **0.2.0 (public beta)** · [한국어](README.ko.md) · [Changelog](CHANGELOG.md)
+[![GitHub Release](https://img.shields.io/github/v/release/dd3ok/spring-engineering-skills)](https://github.com/dd3ok/spring-engineering-skills/releases/latest)
+[![Validate](https://github.com/dd3ok/spring-engineering-skills/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/dd3ok/spring-engineering-skills/actions/workflows/validate.yml)
+[![License](https://img.shields.io/github/license/dd3ok/spring-engineering-skills)](LICENSE)
+
+[한국어](README.ko.md) · [Changelog](CHANGELOG.md)
 
 ## Why this suite
 
@@ -121,14 +125,21 @@ Detailed Spring rules, schemas, and source maps stay inside the skill that owns 
 
 | Contract | Current value |
 | --- | --- |
-| Suite release | `0.2.0` (public beta) |
-| Skill format | [Agent Skills specification](https://agentskills.io/specification) |
+| Skill format | [Agent Skills open specification](https://agentskills.io/specification) |
 | Deterministic scripts | Python 3.12+ |
 | Evidence artifact | `spring-evidence/1` |
 | Upgrade-plan artifact | `spring-upgrade-plan/2` |
 | Routing report | `spring-routing-eval/2` |
 
-Before `1.0.0`, justified breaking changes to skill names or schemas increment the minor version; compatible fixes increment the patch version. See the [changelog](CHANGELOG.md) for release details.
+### Stable contracts and versioning
+
+Version `1.0.0` establishes a stable compatibility promise; it does not imply that the suite is feature-complete. The public contracts are:
+
+- the seven published skill names, activation boundaries, and output ownership;
+- the versioned evidence, upgrade-plan, and routing-report schemas; and
+- deterministic script CLIs, default output behavior, the Python baseline, and the portable skill layout.
+
+Backward-compatible capabilities increment the minor version, compatible fixes increment the patch version, and incompatible public-contract changes increment the major version. See the [changelog](CHANGELOG.md) for release details.
 
 ## Contributing
 
