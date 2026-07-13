@@ -5,6 +5,7 @@ Checked on: 2026-07-12. Treat official target-version requirements and migration
 - [Spring Boot upgrading guide](https://docs.spring.io/spring-boot/upgrading.html) — review every skipped release and remove the temporary properties migrator after use.
 - [Spring Boot build systems](https://docs.spring.io/spring-boot/reference/using/build-systems.html) — managed BOM and dependency override guidance.
 - [Spring Boot system requirements](https://docs.spring.io/spring-boot/system-requirements.html) — current JDK and build-tool baselines; use the target line's versioned page for historical targets.
+- [Spring Boot Kotlin support](https://docs.spring.io/spring-boot/reference/features/kotlin.html) and [Spring Framework Kotlin requirements](https://docs.spring.io/spring-framework/reference/languages/kotlin/requirements.html) — target-line Kotlin, reflection, compiler-plugin, and language requirements.
 - [Spring support policy](https://spring.io/support-policy) — project support timelines and policy.
 - [Spring Initializr reference](https://docs.spring.io/initializr/docs/current/reference/html/) — metadata capabilities; metadata availability alone does not prove long-term support.
 - [Spring Boot 4.0 migration guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide) — required bridge and migration guidance for Boot 4.

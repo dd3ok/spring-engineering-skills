@@ -38,6 +38,14 @@ class RoutingContractTests(unittest.TestCase):
         )
         self.assertTrue(any("prompt lacks route signals" in error for error in errors))
 
+    def test_split_and_intent_family_are_required(self) -> None:
+        def remove_split(cases: list[dict[str, object]]) -> None:
+            cases[0].pop("split")
+            cases[0].pop("intent_family")
+
+        errors = self.validate_modified_cases(remove_split)
+        self.assertTrue(any("invalid split or intent_family" in error for error in errors))
+
     def test_none_case_rejects_named_skill(self) -> None:
         def name_skill_in_none_case(cases: list[dict[str, object]]) -> None:
             case = next(item for item in cases if item["id"] == "ordinary-spring-question")

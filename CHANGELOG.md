@@ -2,6 +2,14 @@
 
 All notable changes to Spring Engineering Skills are documented here.
 
+## 0.2.0 - 2026-07-13
+
+- Enforced canonical, case-correct, repository-contained paths across skill and reference resources; added standalone Apache-2.0 licenses to every distributable skill.
+- Added evidence-scoped Spring Boot 4.0/4.1, Spring Batch 6, Spring AI 2, AOT/native, Kotlin, Kubernetes, and Spring Cloud compatibility guidance from primary sources.
+- Replaced hard-coded Spring Cloud compatibility rules with a validated, freshness-tracked data policy and a bounded official-source drift check.
+- Clarified peer-skill activation boundaries and added fixed train/validation routing partitions, repeated host-trace scoring, and independent behavior evaluation with enforceable release gates.
+- Added a Windows junction smoke check, monthly source-freshness workflow, pinned CI dependencies, and bounded Dependabot update configuration.
+
 ## 0.1.0 - 2026-07-12
 
 - Split the original broad skill into seven independently routable Spring engineering workflows.

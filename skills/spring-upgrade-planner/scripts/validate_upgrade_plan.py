@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import SplitResult, urlsplit
 
 from build_plan_skeleton import validate_evidence_input
+from cloud_policy import compatibility_error, load_policy
 
 
 STATUSES = {"ready", "draft", "blocked"}
@@ -585,14 +586,13 @@ def validate(plan: object, base_dir: Path | None = None, *, now: datetime | None
         errors.append("target Java/build-tool selection is invalid")
     if status == "ready" and (target_java is None or target_build_tool is None or target_build_tool_version is None):
         errors.append("ready plan requires exact target Java and build-tool versions")
-    if (
-        status == "ready"
-        and isinstance(target_version, str)
-        and target_version.startswith("4.1.")
-        and isinstance(target_cloud, str)
-    ):
-        if not target_cloud.startswith("2025.1.") or version_key(target_cloud) < version_key("2025.1.2"):
-            errors.append("Spring Boot 4.1 requires Spring Cloud 2025.1.2 or newer within the 2025.1 train")
+    cloud_policy, cloud_policy_errors = load_policy(today=validation_time.date())
+    if status == "ready" and isinstance(target_version, str) and isinstance(target_cloud, str):
+        errors.extend(f"Spring Cloud compatibility policy: {error}" for error in cloud_policy_errors)
+        if not cloud_policy_errors:
+            cloud_error = compatibility_error(cloud_policy, target_version, target_cloud)
+            if cloud_error is not None:
+                errors.append(cloud_error)
     policy = plan.get("policy")
     if not isinstance(policy, dict) or set(policy) != {"allow_downgrade"} or not isinstance(policy.get("allow_downgrade"), bool):
         errors.append("policy.allow_downgrade must be a boolean")

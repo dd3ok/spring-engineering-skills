@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+import json
 from datetime import date
 from pathlib import Path
 
@@ -139,6 +140,76 @@ class SourcePolicyTests(unittest.TestCase):
                     f"- Fabricated: {url}\n"
                 )
                 self.assertTrue(any("unapproved" in error for error in errors))
+
+    def test_repository_source_review_register_is_valid(self) -> None:
+        source_urls = {
+            match.group(0).rstrip(".,;")
+            for path in validate_source_policy.source_files(ROOT)
+            for match in validate_source_policy.URL_PATTERN.finditer(path.read_text(encoding="utf-8"))
+        }
+        self.assertEqual(
+            validate_source_policy.validate_source_review_register(ROOT, date(2026, 7, 13), source_urls),
+            [],
+        )
+
+    def test_source_review_register_rejects_stale_claim_and_missing_consumer(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            register = root / "evals" / "source-review-register.json"
+            register.parent.mkdir(parents=True)
+            register.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "spring-source-review/1",
+                        "claims": [
+                            {
+                                "id": "claim",
+                                "sources": ["https://docs.spring.io/reference/"],
+                                "consumers": ["missing.md"],
+                                "review_scope": ["policy"],
+                                "reviewed_on": "2026-01-01",
+                                "review_every_days": 30,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            errors = validate_source_policy.validate_source_review_register(
+                root, date(2026, 7, 13), {"https://docs.spring.io/reference/"}
+            )
+        self.assertTrue(any("invalid consumer" in error for error in errors))
+        self.assertTrue(any("stale" in error for error in errors))
+
+    def test_source_review_register_requires_unique_scope_and_regular_file_consumer(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "consumer-dir").mkdir()
+            register = root / "evals" / "source-review-register.json"
+            register.parent.mkdir(parents=True)
+            register.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "spring-source-review/1",
+                        "claims": [
+                            {
+                                "id": "claim",
+                                "sources": ["https://docs.spring.io/reference/"],
+                                "consumers": ["consumer-dir"],
+                                "review_scope": ["policy", "policy"],
+                                "reviewed_on": "2026-07-12",
+                                "review_every_days": 30,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            errors = validate_source_policy.validate_source_review_register(
+                root, date(2026, 7, 13), {"https://docs.spring.io/reference/"}
+            )
+        self.assertTrue(any("invalid consumer" in error for error in errors))
+        self.assertTrue(any("invalid review_scope" in error for error in errors))
 
 
 if __name__ == "__main__":

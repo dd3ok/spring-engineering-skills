@@ -20,11 +20,36 @@ class ValidateAllTests(unittest.TestCase):
         self.assertIn("name: validate", workflow)
         self.assertIn("python scripts/validate_all.py", workflow)
         self.assertIn("python -m ruff check scripts tests skills", workflow)
+        self.assertIn("name: windows-smoke", workflow)
+        self.assertIn("python -m unittest tests.test_skill_structure tests.test_check_links tests.test_evidence_collector", workflow)
+        self.assertIn("-r .github/requirements-ci.txt", workflow)
         self.assertNotIn("check_links.py --online", workflow)
         self.assertNotIn("matrix:", workflow)
+        self.assertNotIn("pull_request_target:", workflow)
+        self.assertNotIn("write-all", workflow)
+        self.assertIn("permissions:\n  contents: read\n", workflow)
+        self.assertIn("timeout-minutes: 10", workflow)
+        self.assertIn("timeout-minutes: 5", workflow)
         action_lines = [line.strip() for line in workflow.splitlines() if "uses:" in line]
         self.assertTrue(action_lines)
         for line in action_lines:
+            self.assertRegex(line, r"uses: [^@]+@[0-9a-f]{40}(?:\s+#.*)?$")
+
+    def test_online_freshness_is_scheduled_not_pr_required(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "source-freshness.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("schedule:", workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("check_spring_cloud_policy.py --online", workflow)
+        self.assertIn("check_links.py --online", workflow)
+        self.assertIn("--timeout 10 --retries 1 --workers 12", workflow)
+        self.assertNotIn("pull_request:", workflow)
+        self.assertNotIn("pull_request_target:", workflow)
+        self.assertNotIn("write-all", workflow)
+        self.assertIn("permissions:\n  contents: read\n", workflow)
+        self.assertIn("timeout-minutes: 15", workflow)
+        for line in (line.strip() for line in workflow.splitlines() if "uses:" in line):
             self.assertRegex(line, r"uses: [^@]+@[0-9a-f]{40}(?:\s+#.*)?$")
 
     def test_command_set_covers_every_repository_check(self) -> None:
@@ -35,6 +60,7 @@ class ValidateAllTests(unittest.TestCase):
             "validate_source_policy.py",
             "validate_routing_contract.py",
             "validate_behavior_cases.py",
+            "check_spring_cloud_policy.py",
             "unittest discover",
             "check_links.py --offline",
         ):

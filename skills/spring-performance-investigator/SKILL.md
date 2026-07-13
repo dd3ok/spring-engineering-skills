@@ -1,6 +1,6 @@
 ---
 name: spring-performance-investigator
-description: 'Investigates Spring/JVM latency, throughput, saturation, memory, GC, threads, pools, databases, messaging, and containers from runtime measurements and controlled experiments. Use for causal performance diagnosis; without runtime artifacts, return a measurement plan rather than claiming a bottleneck.'
+description: 'Use this skill when the user asks for causal diagnosis of Spring/JVM latency, throughput, saturation, memory, GC, threads, pools, databases, messaging, or containers from runtime measurements and controlled experiments. Use it to rank hypotheses and confirm bottlenecks from JFR, metrics, traces, profiles, logs, or workload evidence. Without runtime artifacts, return a measurement plan; do not claim a bottleneck from static configuration alone.'
 ---
 
 # Spring Performance Investigator

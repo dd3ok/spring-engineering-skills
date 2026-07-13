@@ -12,7 +12,7 @@
 
 ## Minimum schema
 
-`evidence.schema.json` is the interoperability shape for consumers. `scripts/validate_evidence.py` remains authoritative for redaction, provenance, and cross-field semantic invariants that JSON Schema cannot express.
+The JSON Schema selected by `SKILL.md` owns the interoperability shape. The bundled semantic validator remains authoritative for redaction, provenance, and cross-field invariants that JSON Schema cannot express.
 
 - `schema_version`: collector output contract version.
 - `repository.root`: always `.`; output never embeds the host absolute path.

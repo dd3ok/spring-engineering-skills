@@ -1,6 +1,6 @@
 ---
 name: spring-test-gap-planner
-description: 'Maps Spring production risks and change surfaces to test gaps and unverified coverage across unit, slice, integration, contract, architecture, concurrency, migration, resilience, and performance levels. Use to create a risk-ranked backlog with fixtures and CI placement; do not equate line coverage with assurance.'
+description: 'Use this skill when the user asks to map Spring production risks or change surfaces to missing and unverified tests across unit, slice, integration, contract, architecture, concurrency, migration, resilience, or performance levels. Use it to create a risk-ranked backlog with fixtures, oracles, CI placement, and flakiness controls. Do not use it to fix one failing test or equate line coverage with assurance.'
 ---
 
 # Spring Test Gap Planner

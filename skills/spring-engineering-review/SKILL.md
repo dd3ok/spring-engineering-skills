@@ -14,8 +14,9 @@ Use this deterministic, additive load order:
 1. Load `references/core-review-rules.md` for every review.
 2. For a broad/full review, load `references/web-security-rules.md`, `references/transaction-data-rules.md`, and `references/architecture-operations-rules.md`; for a narrow review, load only the matching core-surface row.
 3. Add every focused row matching a named stack or concern, even after the broad load.
-4. For version-specific behavior, compatibility, migration requirements, or exact links, load only the matching source map rows.
-5. Re-evaluate the additive routes when repository or runtime evidence reveals a stack that the initial request did not name.
+4. Deduplicate the resulting paths and load each reference at most once.
+5. For version-specific behavior, compatibility, migration requirements, or exact links, load only the matching source map rows. A version mentioned only as context does not trigger a source map unless the response will make a version-sensitive claim.
+6. Re-evaluate the additive routes when repository or runtime evidence reveals a stack that the initial request did not name.
 
 | Request area | Route ID | Load |
 | --- | --- | --- |
