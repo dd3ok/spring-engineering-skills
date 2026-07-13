@@ -4,6 +4,9 @@ All notable changes to Spring Engineering Skills are documented here.
 
 ## Unreleased
 
+- Bound implementation behavior evaluations to real repository fixtures and content-addressed workspace diffs; clarified evidence-backed greenfield version selection and extended lifecycle portability coverage.
+- Added `spring-application-developer` for bounded greenfield and existing-project implementation, with explicit peer-skill ownership, routing cases, and a localized behavior contract.
+- Corrected Spring Web Flow to an active project and Spring Cloud Contract to an Attic project; added consumer-bound lifecycle claims plus a monthly official-page drift check.
 - Added Korean behavior-evaluation cases for evidence-bound performance diagnosis, multi-tenant threat modeling, and ambiguous Spring Cloud upgrades, with a regression guard for localized coverage.
 - Updated the pinned Ruff CI tool after the first Dependabot update attempt failed to create its pull request.
 

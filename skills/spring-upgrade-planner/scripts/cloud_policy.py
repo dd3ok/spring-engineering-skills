@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 
@@ -29,7 +29,7 @@ def version_key(value: str) -> tuple[int, ...]:
 
 def validate_policy(data: object, *, today: date | None = None) -> list[str]:
     errors: list[str] = []
-    current_date = today or date.today()
+    current_date = today or datetime.now(UTC).date()
     if not isinstance(data, dict) or set(data) != POLICY_FIELDS:
         return ["Spring Cloud policy must contain the exact top-level fields"]
     if data.get("schema_version") != "spring-cloud-compatibility-policy/1":

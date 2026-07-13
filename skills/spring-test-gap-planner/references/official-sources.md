@@ -1,6 +1,6 @@
 # Official Sources
 
-Checked on: 2026-07-12. These official project documents are normative for the test infrastructure and framework behavior they describe.
+Checked on: 2026-07-13. These official project documents are normative for the test infrastructure and framework behavior they describe.
 
 Fixed Kafka and Pulsar links below are reviewed examples, not compatibility defaults. Use the deployed broker/client line's matching official documentation for version-specific test semantics.
 
@@ -11,7 +11,7 @@ Fixed Kafka and Pulsar links below are reviewed examples, not compatibility defa
 - [Spring Framework MockMvc](https://docs.spring.io/spring-framework/reference/testing/mockmvc.html) — server-side MVC testing scope.
 - [Spring Boot Testcontainers](https://docs.spring.io/spring-boot/reference/testing/testcontainers.html) — service connections and lifecycle interaction with cached contexts.
 - [Spring Security testing](https://docs.spring.io/spring-security/reference/servlet/test/index.html) — authentication, authorization, CSRF, and MVC support.
-- [Spring Cloud Contract](https://docs.spring.io/spring-cloud-contract/reference/) — consumer-driven and producer contract tests.
+- [Spring Cloud Contract](https://docs.spring.io/spring-cloud-contract/reference/) — Projects in the Attic; use for compatibility or migration of existing adopters, not as the default for new contract-test designs. Lifecycle listing: [Spring projects](https://spring.io/projects/).
 - [Spring REST Docs](https://docs.spring.io/spring-restdocs/docs/current/reference/htmlsingle/) — documentation driven by verified tests.
 - [Testcontainers JUnit 5](https://java.testcontainers.org/test_framework_integration/junit_5/) — container lifecycle and parallel-execution limitation.
 - [Apache Kafka 4.3 security](https://kafka.apache.org/43/security/security-overview/) and [ACLs](https://kafka.apache.org/43/security/authorization-and-acls/) — listener authentication, encryption, and resource-authorization test boundaries.

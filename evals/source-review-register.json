@@ -64,6 +64,14 @@
       "review_scope": ["Restricted controls", "Linux and Windows differences"],
       "reviewed_on": "2026-07-12",
       "review_every_days": 180
+    },
+    {
+      "id": "spring-project-lifecycle",
+      "sources": ["https://spring.io/projects/"],
+      "consumers": ["evals/spring-project-lifecycle.json", "skills/spring-engineering-review/SKILL.md", "skills/spring-engineering-review/references/specialized-sources.md", "skills/spring-test-gap-planner/references/official-sources.md"],
+      "review_scope": ["active project listing", "Projects in the Attic classification", "consumer claim markers"],
+      "reviewed_on": "2026-07-13",
+      "review_every_days": 30
     }
   ]
 }

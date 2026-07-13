@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -16,8 +17,10 @@ COMMIT = re.compile(r"^[a-f0-9]{40}$")
 RESULT_FIELDS = {
     "case_id", "run_id", "condition", "host", "host_version", "model", "skill_commit",
     "trace_id", "output_sha256", "grader_kind", "must_results", "must_not_results", "notes",
+    "workspace_diff_sha256", "changed_paths",
 }
 GRADES = {"pass", "fail", "unclear"}
+EMPTY_WORKSPACE_DIFF_SHA256 = hashlib.sha256(b"[]").hexdigest()
 MIN_MUST_PASS_RATE = 0.95
 MIN_SKILL_MUST_PASS_RATE = 0.9
 
@@ -69,6 +72,29 @@ def load_results(path: Path) -> list[dict[str, object]]:
             raise ValueError(f"behavior result line {line_number} has invalid skill_commit")
         if not isinstance(item.get("output_sha256"), str) or SHA256.fullmatch(str(item["output_sha256"])) is None:
             raise ValueError(f"behavior result line {line_number} has invalid output_sha256")
+        workspace_diff_sha256 = item.get("workspace_diff_sha256")
+        if workspace_diff_sha256 is not None and (
+            not isinstance(workspace_diff_sha256, str)
+            or SHA256.fullmatch(workspace_diff_sha256) is None
+        ):
+            raise ValueError(f"behavior result line {line_number} has invalid workspace_diff_sha256")
+        changed_paths = item.get("changed_paths")
+        if changed_paths is not None and (
+            not isinstance(changed_paths, list)
+            or not all(
+                isinstance(value, str)
+                and value
+                and not value.startswith("/")
+                and not re.match(r"^[A-Za-z]:", value)
+                and "\\" not in value
+                and ".." not in Path(value).parts
+                and Path(value).as_posix() == value
+                for value in changed_paths
+            )
+            or len(set(changed_paths)) != len(changed_paths)
+            or changed_paths != sorted(changed_paths)
+        ):
+            raise ValueError(f"behavior result line {line_number} has invalid changed_paths")
         if item.get("grader_kind") not in {"independent-human", "independent-model"}:
             raise ValueError(f"behavior result line {line_number} has invalid grader_kind")
         for field in ("must_results", "must_not_results"):
@@ -144,6 +170,28 @@ def score_results(
         case = cases.get(case_id)
         if case is None:
             errors.append(f"unknown behavior case: {case_id}")
+            continue
+        workspace_diff_sha256 = item.get("workspace_diff_sha256")
+        changed_paths = item.get("changed_paths")
+        if case.get("artifact_mode") == "repository-fixture":
+            if not isinstance(workspace_diff_sha256, str) or not isinstance(changed_paths, list):
+                errors.append(
+                    f"repository-fixture result lacks workspace evidence: "
+                    f"{case_id}/{condition}/{run_id}"
+                )
+                continue
+            if condition == "with-skill" and (
+                not changed_paths or workspace_diff_sha256 == EMPTY_WORKSPACE_DIFF_SHA256
+            ):
+                errors.append(
+                    f"repository-fixture with-skill run has no changes: "
+                    f"{case_id}/{condition}/{run_id}"
+                )
+                continue
+        elif workspace_diff_sha256 is not None or changed_paths is not None:
+            errors.append(
+                f"non-fixture result contains workspace evidence: {case_id}/{condition}/{run_id}"
+            )
             continue
         must_results = item["must_results"]
         must_not_results = item["must_not_results"]
