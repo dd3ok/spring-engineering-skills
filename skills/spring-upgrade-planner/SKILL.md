@@ -20,7 +20,7 @@ Load `references/upgrade-playbook.md` for every plan. Load `references/upgrade-p
 5. Separate mechanical changes, compile/test failures, runtime behavior changes, data/schema/protocol changes, operational changes, and deprecations.
 6. Define staged pull requests, verification gates, canary signals, rollback boundaries, and temporary compatibility measures with explicit removal criteria.
 
-With evidence, generate a deterministic draft using `python scripts/build_plan_skeleton.py <evidence.json> --target <version>` and validate edits with `python scripts/validate_upgrade_plan.py <plan.json>`. Keep the exact evidence snapshot at the plan-local `input.evidence_snapshot_path`; `ready` validation hashes it and binds current-version evidence IDs to its facts. Mark a plan `ready` only when validation also accepts plan-local, content-addressed official snapshots with gate- and hop-specific provenance. Validation proves provenance consistency, not source truth or interpretation.
+With evidence, generate a deterministic draft using `python scripts/build_plan_skeleton.py <evidence.json> --target <version>` and validate edits with `python scripts/validate_upgrade_plan.py <plan.json>`. Use `--output <path>` only when the user asks for a saved artifact; otherwise keep the generated JSON on stdout and return the requested plan in the response. Keep the exact evidence snapshot at the plan-local `input.evidence_snapshot_path`; `ready` validation hashes it and binds current-version evidence IDs to its facts. Mark a plan `ready` only when validation also accepts plan-local, content-addressed official snapshots with gate- and hop-specific provenance. Validation proves provenance consistency, not source truth or interpretation.
 
 ## Source Policy
 
