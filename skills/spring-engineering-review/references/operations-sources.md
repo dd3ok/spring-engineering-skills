@@ -12,6 +12,14 @@ Checked on: 2026-07-12. Use this map for discovery, then cite the exact versione
 - JEP 491, Synchronize Virtual Threads without Pinning: https://openjdk.org/jeps/491
 - Oracle Java 26 virtual threads guide: https://docs.oracle.com/en/java/javase/26/core/virtual-threads.html
 - Oracle Java 21 virtual threads guide: https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html
+- Spring Boot AOT on the JVM: https://docs.spring.io/spring-boot/reference/packaging/aot.html
+- Spring Framework AOT restrictions: https://docs.spring.io/spring-framework/reference/core/aot.html
+- Spring Boot native images: https://docs.spring.io/spring-boot/reference/packaging/native-image/introducing-graalvm-native-images.html
+- Spring Boot native application testing: https://docs.spring.io/spring-boot/how-to/native-image/testing-native-applications.html
+- Spring Framework Kotlin requirements: https://docs.spring.io/spring-framework/reference/languages/kotlin/requirements.html
+- Kotlin all-open and `kotlin-spring` compiler plugins: https://kotlinlang.org/docs/all-open-plugin.html
+- Kotlin no-arg and `kotlin-jpa` compiler plugins: https://kotlinlang.org/docs/no-arg-plugin.html
+- Spring Data coroutine repositories: https://docs.spring.io/spring-data/commons/reference/kotlin/coroutines.html
 
 Treat feature availability and GA status as JDK-line facts. Treat LTS designation, patch availability, and support duration as distribution-vendor policy; verify the deployed vendor before making lifecycle claims.
 - Oracle Java 26 Flight Recorder guide: https://docs.oracle.com/en/java/javase/26/jfapi/flight-recorder.html
@@ -26,6 +34,10 @@ Treat feature availability and GA status as JDK-line facts. Treat LTS designatio
 - Kubernetes Pod disruptions and disruption budgets: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
 - Kubernetes horizontal Pod autoscaling: https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/
 - Kubernetes topology spread constraints: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+- Kubernetes container image lifecycle and digests: https://kubernetes.io/docs/concepts/containers/images/
+- Kubernetes Pod Security Standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/
+- Kubernetes Secrets good practices: https://kubernetes.io/docs/concepts/security/secrets-good-practices/
+- Spring Boot Kubernetes probes and main-port availability groups: https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.kubernetes-probes
 - k6 open and closed workload models: https://grafana.com/docs/k6/latest/using-k6/scenarios/concepts/open-vs-closed/
 
 ## Background References

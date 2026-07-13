@@ -1,6 +1,6 @@
 ---
 name: spring-modulith-auditor
-description: 'Audits Spring application module boundaries, dependency cycles, internal API leakage, allowed dependencies, events, module tests, and observability. Use for an explicit dependency graph and Spring Modulith verification semantics; do not add Modulith or change packages unless implementation is requested.'
+description: 'Use this skill when the user asks to audit Spring application module boundaries, dependency cycles, internal API leakage, allowed dependencies, events, module tests, or module observability. Use it for an explicit dependency graph and Spring Modulith verification semantics. Do not add Modulith, change packages, or claim executable verification unless implementation or authorized execution is requested.'
 ---
 
 # Spring Modulith Auditor

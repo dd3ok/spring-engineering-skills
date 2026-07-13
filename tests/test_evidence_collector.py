@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -298,6 +299,29 @@ class EvidenceCollectorTests(unittest.TestCase):
             root = Path(root_directory).resolve()
             outside = Path(outside_directory).resolve()
             self.assertFalse(collector.resolves_within(outside, root))
+
+    @unittest.skipUnless(os.name == "nt", "Windows junction semantics")
+    def test_windows_internal_junction_is_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as root_directory:
+            root = Path(root_directory)
+            target = root / "real-project"
+            target.mkdir()
+            (target / "pom.xml").write_text("<project/>", encoding="utf-8")
+            junction = root / "linked-project"
+            created = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), str(target)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if created.returncode != 0:
+                self.skipTest(f"junction creation unavailable: {created.stderr.strip()}")
+            result = collector.collect(root, 100, 100_000)
+        self.assertEqual([project["id"] for project in result["projects"]], ["project:real-project"])
+        self.assertTrue(any(
+            gap["kind"] == "link-or-boundary-skipped" and gap["path"] == "linked-project"
+            for gap in result["gaps"]
+        ))
 
     def test_parent_traversal_source_path_is_rejected(self) -> None:
         fact = {

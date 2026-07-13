@@ -1,0 +1,22 @@
+{
+  "schema_version": "spring-cloud-compatibility-policy/1",
+  "checked_on": "2026-07-12",
+  "max_age_days": 180,
+  "source_locator": "https://spring.io/projects/spring-cloud/",
+  "rows": [
+    {
+      "train": "2025.1",
+      "source_text": "2025.1.x aka Oakwood 4.0.x, 4.1.x (Starting with 2025.1.2)",
+      "boot_lines": [
+        {
+          "line": "4.0",
+          "min_service_release": "2025.1.0"
+        },
+        {
+          "line": "4.1",
+          "min_service_release": "2025.1.2"
+        }
+      ]
+    }
+  ]
+}

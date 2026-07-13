@@ -1,6 +1,6 @@
 ---
 name: spring-evidence-collector
-description: 'Collects a redacted, reproducible static inventory of Spring build files, declared versions, configuration keys, source and test signals, and deployment artifacts. Use to produce an evidence pack without dependency resolution; bundled scripts require Python 3.12+, build execution requires separate authorization, and configuration values remain redacted in every mode.'
+description: 'Use this skill when the user asks to collect, validate, or interpret a redacted static inventory of Spring build files, declared versions, configuration keys, source/test signals, modules, or deployment artifacts, or to implement or validate a spring-evidence/1 consumer. A review or upgrade skill may hand off here when it identifies missing repository facts; missing facts alone do not make this the initial owner. Do not use it for dependency resolution, an upgrade plan, or an ordinary Spring explanation. Bundled scripts require Python 3.12+; build execution requires separate authorization and configuration values remain redacted.'
 ---
 
 # Spring Evidence Collector

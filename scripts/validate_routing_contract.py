@@ -47,6 +47,7 @@ def validate_contract() -> list[str]:
     negative_coverage: set[str] = set()
     review_route_coverage: set[str] = set()
     positive_reference_coverage: dict[str, set[str]] = {name: set() for name in skill_names}
+    split_coverage: dict[str, set[str]] = {name: set() for name in (*skill_names, "none")}
     try:
         review_always, review_policy = load_review_policy()
     except (OSError, ValueError, json.JSONDecodeError) as error:
@@ -87,6 +88,8 @@ def validate_contract() -> list[str]:
         expected = item.get("expected_skill")
         channel = item.get("activation_channel")
         signals = item.get("route_signals")
+        split = item.get("split")
+        intent_family = item.get("intent_family")
         refs = item.get("expected_refs")
         forbidden_refs = item.get("forbidden_refs", [])
         review_routes = item.get("review_routes")
@@ -103,6 +106,10 @@ def validate_contract() -> list[str]:
         if expected is not None and (not isinstance(expected, str) or expected not in skill_names):
             errors.append(f"{case_id} has unknown expected_skill: {expected}")
             continue
+        if split not in {"train", "validation"} or not isinstance(intent_family, str) or not intent_family:
+            errors.append(f"{case_id} has invalid split or intent_family")
+            continue
+        split_coverage[expected if isinstance(expected, str) else "none"].add(split)
         if not isinstance(signals, list) or not all(isinstance(value, str) and value for value in signals):
             errors.append(f"{case_id} route_signals must be non-empty strings")
             continue
@@ -190,6 +197,9 @@ def validate_contract() -> list[str]:
     missing_positive = skill_names - positive_coverage
     if missing_positive:
         errors.append("skills without positive routing cases: " + ", ".join(sorted(missing_positive)))
+    for owner, splits in sorted(split_coverage.items()):
+        if splits != {"train", "validation"}:
+            errors.append(f"{owner} routing cases must cover train and validation splits")
     missing_negative = skill_names - negative_coverage
     if missing_negative:
         errors.append("skills without negative/non-overlap cases: " + ", ".join(sorted(missing_negative)))

@@ -1,0 +1,38 @@
+name: source-freshness
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-freshness
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: source-freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Validate source policy
+        run: python scripts/validate_source_policy.py
+
+      - name: Check Spring Cloud compatibility policy
+        run: python scripts/check_spring_cloud_policy.py --online
+
+      - name: Check source links
+        run: python scripts/check_links.py --online --timeout 10 --retries 1 --workers 12

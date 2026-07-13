@@ -10,6 +10,13 @@ Use this file only when Spring Batch, scheduled bulk processing, chunk-oriented 
 - Keep `JobRepository` state for restartable production jobs in durable infrastructure with backup and recovery behavior matched to the job contract.
 - Keep batch jobs out of request/response paths. Use explicit launch, scheduling, or orchestration with concurrency control.
 
+## Spring Batch 6 Infrastructure
+
+- On Batch 6+, identify the actual `JobRepository` and transaction infrastructure. Do not mistake the default `ResourcelessJobRepository` from `@EnableBatchProcessing` or `DefaultBatchConfiguration` for durable metadata storage.
+- Treat the resourceless repository as suitable only for bounded one-shot work that does not require restart metadata, shared execution context, concurrent execution, partition metadata, or operational history. Do not require a database repository for every non-restartable single-process job.
+- When restart, concurrency, partitioning, or operational inspection is required, verify an explicitly configured store-specific repository such as JDBC or MongoDB and its matching transaction manager, backup, and recovery behavior.
+- For a Batch 6 migration, review repository configuration, metadata schema changes, execution-context serialization, Jackson 3 effects, immutable domain-model changes, and moved or removed APIs against the exact migration guide.
+
 ## Correctness and Idempotency
 
 - Make readers restart-safe and writers idempotent. Check checkpoint state, item identity, duplicate handling, and partial-write behavior.

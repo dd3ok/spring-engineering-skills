@@ -20,6 +20,10 @@ class ReleaseMetadataTests(unittest.TestCase):
             (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"),
             rf"(?m)^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}$",
         )
+        collector = (
+            ROOT / "skills" / "spring-evidence-collector" / "scripts" / "collect_evidence.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(f'"collector_version": "{version}"', collector)
 
     def test_apache_license_is_present_and_linked(self) -> None:
         license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
@@ -27,6 +31,11 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("Version 2.0, January 2004", license_text)
         self.assertIn("END OF TERMS AND CONDITIONS", license_text)
         self.assertIn("[Apache License 2.0](LICENSE)", (ROOT / "README.md").read_text(encoding="utf-8"))
+        for skill in (ROOT / "skills").iterdir():
+            if skill.is_dir():
+                self.assertEqual((skill / "LICENSE").read_text(encoding="utf-8"), license_text)
+        self.assertIn("`SKILL.md`, `LICENSE`, `references/`", (ROOT / "README.md").read_text(encoding="utf-8"))
+        self.assertIn("`SKILL.md`, `LICENSE`, `references/`", (ROOT / "README.ko.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

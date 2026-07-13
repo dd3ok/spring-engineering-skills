@@ -2,11 +2,11 @@
 
 Use this file only for jOOQ, Spring Data NoSQL, Spring Data REST, or broad data-access strategy reviews beyond the core JPA/JDBC/R2DBC rules.
 
-Load `postgresql-rules.md` when PostgreSQL-specific MVCC, vacuum, locks, plans, replication, pooling, or schema operations are material.
+Also select the `postgresql` route defined in `SKILL.md` when PostgreSQL-specific MVCC, vacuum, locks, plans, replication, pooling, or schema operations are material.
 
 ## Strategy Selection
 
-- Use `transaction-data-rules.md` for baseline JPA, JDBC, and R2DBC selection.
+- Keep baseline JPA, JDBC, and R2DBC selection in the `transaction-data` route defined in `SKILL.md`.
 - In this file, focus on deltas: jOOQ for type-safe SQL/schema-driven generation, NoSQL when the store matches the aggregate/query model, and Spring Data REST when repository exposure becomes an API surface.
 
 ## jOOQ

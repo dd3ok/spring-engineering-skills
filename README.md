@@ -2,7 +2,7 @@
 
 A vendor-neutral, evidence-driven suite for Spring and Spring Boot best practices: repository review, upgrade planning, performance investigation, threat modeling, test-gap analysis, and Spring Modulith audits.
 
-Current release: **0.1.0 (public beta)**. The skill contents and deterministic scripts are licensed under the [Apache License 2.0](LICENSE).
+Current release: **0.2.0 (public beta)**. The skill contents and deterministic scripts are licensed under the [Apache License 2.0](LICENSE).
 
 [한국어 문서](README.ko.md)
 
@@ -62,7 +62,7 @@ Clone the repository:
 git clone https://github.com/dd3ok/spring-engineering-skills.git
 ```
 
-Install one skill by copying its complete `skills/<skill-name>/` directory into a skill location supported by the target host. Install the suite by copying all seven directories. Keep each skill's `SKILL.md`, `references/`, and optional `scripts/` together.
+Install one skill by copying its complete `skills/<skill-name>/` directory into a skill location supported by the target host. Install the suite by copying all seven directories. Keep each skill's `SKILL.md`, `LICENSE`, `references/`, and optional `scripts/` together. Preserve the bundled `LICENSE` when redistributing a skill, and preserve `NOTICE` too if a later release adds one.
 
 For Codex, use `.agents/skills/` for repository-specific discovery or `$HOME/.agents/skills/` for user-wide discovery. Once all seven skills are installed, Codex can select a matching peer skill implicitly from its metadata; this installation detail does not change the vendor-neutral skill contents. See the [Codex skills documentation](https://learn.chatgpt.com/docs/customization/overview#skills).
 
@@ -125,7 +125,7 @@ All deterministic scripts require Python 3.12 or newer and use only the Python s
 
 | Surface | Current contract |
 | --- | --- |
-| Suite release | `0.1.0` (public beta) |
+| Suite release | `0.2.0` (public beta) |
 | Skill format | [Agent Skills specification](https://agentskills.io/specification) |
 | Deterministic scripts | Python 3.12 or newer |
 | Evidence artifact | `spring-evidence/1` |
@@ -170,7 +170,8 @@ For a real host/model routing run, export blind prompts and score the observed s
 
 ```text
 python scripts/score_routing_results.py --emit-prompts dist/routing-prompts.jsonl
-python scripts/score_routing_results.py dist/routing-results.jsonl --json-report dist/routing-report.json
+python scripts/score_routing_results.py dist/routing-results.jsonl --expected-runs 3 --require-trace --json-report dist/routing-report.json
+python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --json-report dist/behavior-report.json
 ```
 
 See [`evals/README.md`](evals/README.md) for the evaluation protocol and limitations.

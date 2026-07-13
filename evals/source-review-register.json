@@ -1,0 +1,69 @@
+{
+  "schema_version": "spring-source-review/1",
+  "claims": [
+    {
+      "id": "boot-system-requirements",
+      "sources": ["https://docs.spring.io/spring-boot/system-requirements.html"],
+      "consumers": ["skills/spring-upgrade-planner/references/upgrade-playbook.md", "skills/spring-engineering-review/references/migration-rules.md"],
+      "review_scope": ["Java range", "build-tool ranges", "Framework minimum", "GraalVM baseline"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 30
+    },
+    {
+      "id": "spring-cloud-boot-compatibility",
+      "sources": ["https://spring.io/projects/spring-cloud/"],
+      "consumers": ["skills/spring-upgrade-planner/references/spring-cloud-compatibility-policy.json"],
+      "review_scope": ["release train", "Boot generation", "minimum service release"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 30
+    },
+    {
+      "id": "spring-support-policy",
+      "sources": ["https://spring.io/support-policy"],
+      "consumers": ["skills/spring-upgrade-planner/references/upgrade-playbook.md"],
+      "review_scope": ["support timelines", "open-source support policy"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 45
+    },
+    {
+      "id": "boot-4-migration",
+      "sources": ["https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide"],
+      "consumers": ["skills/spring-engineering-review/references/migration-rules.md", "skills/spring-upgrade-planner/references/upgrade-playbook.md"],
+      "review_scope": ["module and starter split", "removed features", "Jackson 3", "test infrastructure"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 60
+    },
+    {
+      "id": "spring-ai-mcp-limits",
+      "sources": ["https://docs.spring.io/spring-ai/reference/api/mcp/mcp-security.html"],
+      "consumers": ["skills/spring-engineering-review/references/spring-ai-rules.md"],
+      "review_scope": ["module maturity", "server stack", "client mode"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 60
+    },
+    {
+      "id": "kotlin-spring-requirements",
+      "sources": ["https://docs.spring.io/spring-framework/reference/languages/kotlin/requirements.html"],
+      "consumers": ["skills/spring-engineering-review/references/architecture-operations-rules.md", "skills/spring-upgrade-planner/references/upgrade-playbook.md"],
+      "review_scope": ["Kotlin baseline", "reflection", "compiler plugins"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 90
+    },
+    {
+      "id": "spring-batch-6-infrastructure",
+      "sources": ["https://docs.spring.io/spring-batch/reference/job/configuring-repository.html", "https://github.com/spring-projects/spring-batch/wiki/Spring-Batch-6.0-Migration-Guide"],
+      "consumers": ["skills/spring-engineering-review/references/spring-batch-rules.md"],
+      "review_scope": ["default repository", "restartability", "concurrency", "migration changes"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 90
+    },
+    {
+      "id": "kubernetes-pod-security",
+      "sources": ["https://kubernetes.io/docs/concepts/security/pod-security-standards/"],
+      "consumers": ["skills/spring-engineering-review/references/architecture-operations-rules.md"],
+      "review_scope": ["Restricted controls", "Linux and Windows differences"],
+      "reviewed_on": "2026-07-12",
+      "review_every_days": 180
+    }
+  ]
+}

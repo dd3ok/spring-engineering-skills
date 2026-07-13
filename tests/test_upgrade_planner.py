@@ -11,6 +11,7 @@ import tempfile
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -100,6 +101,12 @@ class UpgradePlannerTests(unittest.TestCase):
         plan = {"schema_version": "spring-upgrade-plan/2", "status": "draft", "target": {"spring_boot": "9" * 5000 + ".0.0"}}
         errors = validator.validate(plan)
         self.assertTrue(errors)
+
+    def test_non_cloud_draft_is_not_invalidated_by_stale_cloud_policy(self) -> None:
+        plan = {"schema_version": "spring-upgrade-plan/2", "status": "draft", "target": {"spring_boot": "4.1.0"}}
+        with patch.object(validator, "load_policy", return_value=({}, ["policy is stale"])):
+            errors = validator.validate(plan)
+        self.assertFalse(any("Spring Cloud compatibility policy" in error for error in errors))
 
     def test_non_string_input_source_id_is_rejected_without_crashing(self) -> None:
         plan = {"schema_version": "spring-upgrade-plan/2", "status": "draft", "input": {"evidence_sha256": "a" * 64, "source_snapshot_ids": [{}]}}

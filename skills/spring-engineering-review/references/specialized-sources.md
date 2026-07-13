@@ -6,7 +6,7 @@ Checked on: 2026-07-12. Use this map for discovery, then cite the exact versione
 
 - Spring AI project page: https://spring.io/projects/spring-ai/
 - Spring AI reference: https://docs.spring.io/spring-ai/reference/index.html
-- ChatClient API: https://docs.spring.io/spring-ai/reference/api/chatclient.html
+- ChatClient API and imperative/reactive implementation notes: https://docs.spring.io/spring-ai/reference/api/chatclient.html
 - Advisors API: https://docs.spring.io/spring-ai/reference/api/advisors.html
 - Structured output converter: https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html
 - Tool calling: https://docs.spring.io/spring-ai/reference/api/tools.html
@@ -15,7 +15,8 @@ Checked on: 2026-07-12. Use this map for discovery, then cite the exact versione
 - Vector databases: https://docs.spring.io/spring-ai/reference/api/vectordbs.html
 - Observability: https://docs.spring.io/spring-ai/reference/observability/index.html
 - Evaluation testing: https://docs.spring.io/spring-ai/reference/api/testing.html
-- MCP support and security: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-overview.html
+- MCP overview: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-overview.html
+- Community MCP Security module status and limitations: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-security.html
 
 ## Spring Batch
 
@@ -26,6 +27,9 @@ Checked on: 2026-07-12. Use this map for discovery, then cite the exact versione
 - Step configuration: https://docs.spring.io/spring-batch/reference/step.html
 - Chunk-oriented processing: https://docs.spring.io/spring-batch/reference/step/chunk-oriented-processing.html
 - Scaling and parallel processing: https://docs.spring.io/spring-batch/reference/scalability.html
+- Spring Batch 6 What's New: https://docs.spring.io/spring-batch/reference/whatsnew.html
+- JobRepository configuration, including resourceless infrastructure: https://docs.spring.io/spring-batch/reference/job/configuring-repository.html
+- Spring Batch 6.0 migration guide: https://github.com/spring-projects/spring-batch/wiki/Spring-Batch-6.0-Migration-Guide
 
 ## Architecture, Modules, and API Documentation
 
