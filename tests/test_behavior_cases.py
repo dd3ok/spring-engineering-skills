@@ -28,6 +28,18 @@ class BehaviorCaseTests(unittest.TestCase):
                 errors = validate_behavior_cases.validate_cases()
         self.assertTrue(any("contradicts itself" in error for error in errors))
 
+    def test_unhashable_rubric_items_return_validation_errors(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        cases[0]["must"] = [["nested"]]
+        cases[0]["must_not"] = [{"unexpected": "object"}]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("must must be non-empty strings" in error for error in errors))
+        self.assertTrue(any("must_not must be non-empty strings" in error for error in errors))
+
     def test_korean_behavior_coverage_is_required(self) -> None:
         cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
         cases = [

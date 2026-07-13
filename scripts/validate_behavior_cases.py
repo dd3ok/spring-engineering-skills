@@ -64,7 +64,9 @@ def validate_cases() -> list[str]:
         ):
             errors.append(f"{case_id or index} must require a Korean response")
         if isinstance(case.get("must"), list) and isinstance(case.get("must_not"), list):
-            overlap = set(case["must"]) & set(case["must_not"])
+            must_items = {value for value in case["must"] if isinstance(value, str)}
+            must_not_items = {value for value in case["must_not"] if isinstance(value, str)}
+            overlap = must_items & must_not_items
             if overlap:
                 errors.append(f"{case_id or index} contradicts itself: {', '.join(sorted(overlap))}")
     missing = skills - covered
