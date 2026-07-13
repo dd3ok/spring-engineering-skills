@@ -18,6 +18,17 @@ Use this file only to evaluate an existing Spring, Java/Kotlin, Jakarta, depende
 - Verify that it separates mechanical namespace or package migration from behavior changes.
 - Confirm that it includes build-tool, plugin, container-image, and native-image changes rather than treating them as afterthoughts.
 
+## Spring Boot 4 Gate
+
+Apply this gate only to a Spring Boot 3.x to 4.x proposal, and include an item only when repository evidence shows that the affected starter, module, API, test facility, server, or behavior is used.
+
+- Verify the plan stabilizes on the latest applicable 3.5.x patch, enters the latest applicable 4.0.x patch, and reviews every skipped release note before later 4.x lines.
+- Inventory direct main and test dependencies against Boot 4's module and starter split. Check renamed, deprecated, and removed starters rather than assuming a Boot 3 starter maps unchanged.
+- Check target-version requirements for Java, Kotlin, GraalVM, Jakarta EE, and Servlet. For Boot 4.0 specifically, account for Kotlin 2.2+, GraalVM 25+, Jakarta EE 11, Servlet 6.1, and the removal of embedded Undertow support when those surfaces apply.
+- Treat Jackson 3 as a behavior migration: review coordinates and packages, mapper bean types, renamed properties and customizers, module discovery, wire formats, and any temporary Jackson 2 compatibility module with an explicit removal condition.
+- Review affected tests for the Boot 4 test-starter split and the fact that `@SpringBootTest` no longer supplies MockMvc, `WebClient`, or `TestRestTemplate` without the corresponding test auto-configuration. Check mock/spy annotation and package moves against the exact target line.
+- Check removed reactive Pulsar management and executable launch-script support only when the repository actually uses those features.
+
 ## Runtime Behavior
 
 - Review configuration binding changes, path matching, security defaults, serialization changes, observability changes, actuator exposure, data initialization, schema migration, and HTTP client behavior.

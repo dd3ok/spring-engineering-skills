@@ -16,6 +16,7 @@ def validation_commands(python: str = sys.executable) -> tuple[tuple[str, tuple[
         ("source policy", (python, "scripts/validate_source_policy.py")),
         ("routing contract", (python, "scripts/validate_routing_contract.py")),
         ("behavior contract", (python, "scripts/validate_behavior_cases.py")),
+        ("Spring Cloud compatibility policy", (python, "scripts/check_spring_cloud_policy.py")),
         ("unit tests", (python, "-m", "unittest", "discover", "-s", "tests", "-v")),
         ("offline links", (python, "scripts/check_links.py", "--offline")),
     )

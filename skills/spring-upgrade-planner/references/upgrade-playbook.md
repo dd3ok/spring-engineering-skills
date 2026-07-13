@@ -2,7 +2,7 @@
 
 The portable interchange format is `spring-upgrade-plan/2`. Version 2 replaces v1 because exact Spring Cloud and controlled-capture provenance fields are now required; migrate v1 artifacts explicitly rather than relabeling them.
 
-`upgrade-plan.schema.json` defines the portable interchange shape. `scripts/validate_upgrade_plan.py` remains authoritative for provenance, applicability, snapshot, and cross-field semantic invariants.
+The JSON Schema selected by `SKILL.md` defines the portable interchange shape. The bundled semantic validator remains authoritative for provenance, applicability, snapshot, and cross-field invariants.
 
 ## Order of work
 
@@ -13,6 +13,8 @@ The portable interchange format is `spring-upgrade-plan/2`. Version 2 replaces v
 5. Compile, run focused tests, run integration/contract tests, and observe a production-like canary at every boundary.
 
 For a Boot major transition, preserve the official landing lines in the hop chain: enter Boot 3 through a pinned latest 2.7.x and then a pinned latest 3.0.x; enter Boot 4 through a pinned latest 3.5.x and then a pinned latest 4.0.x. Continue through later feature lines only after reviewing every skipped release note. Resolve every `latest-*.x-from-pinned-source` placeholder to an exact version before `ready` status.
+
+For a Boot 4 transition, turn repository evidence into four bounded work groups: main/test starter and direct-dependency inventory; applicable baseline, removed-feature, container, and Jackson 3 changes; test-infrastructure changes; and compile, focused-test, integration/contract, and canary verification. Do not add Undertow, Pulsar, Batch, native-image, Kotlin, or other technology-specific work unless the evidence pack shows that surface is used or the target baseline directly requires it.
 
 Bind every migration-guide or release-notes snapshot to the exact hop it supports. A Boot 4.0 migration guide cannot substantiate a 2.7 → 3.0 transition or later 4.0 → 4.1 release changes. Aggregate skipped notes only in a content-addressed snapshot whose ledger applicability matches that hop.
 

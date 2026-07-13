@@ -4,7 +4,7 @@ import json
 import re
 from collections import Counter, defaultdict
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 from skill_utils import ROOT
@@ -19,7 +19,10 @@ FIXED_VERSION_PATTERN = re.compile(
 PRERELEASE_PATTERN = re.compile(r"(?:SNAPSHOT|(?:^|[-./])(?:M|MILESTONE|RC)\d+|[-./](?:alpha|beta|ea)\d*)", re.IGNORECASE)
 LATEST_LABEL_PATTERN = re.compile(r"\b(?:current|latest|stable|ga)\b", re.IGNORECASE)
 MAX_REVIEW_AGE_DAYS = 180
+REVIEW_CADENCES = {30, 45, 60, 90, 180}
 PUBLISHER_POLICY_PATH = ROOT / "evals" / "source-publisher-policy.json"
+REVIEW_REGISTER_FIELDS = {"schema_version", "claims"}
+REVIEW_CLAIM_FIELDS = {"id", "sources", "consumers", "review_scope", "reviewed_on", "review_every_days"}
 
 
 def load_publisher_policy(path: Path = PUBLISHER_POLICY_PATH) -> tuple[set[str], set[str]]:
@@ -48,6 +51,120 @@ def load_publisher_policy(path: Path = PUBLISHER_POLICY_PATH) -> tuple[set[str],
 
 def source_files(root: Path = ROOT) -> tuple[Path, ...]:
     return tuple(sorted(root.glob("skills/*/references/*sources.md")))
+
+
+def has_exact_case(path: Path, root: Path) -> bool:
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return False
+    current = root
+    for part in relative.parts:
+        try:
+            names = {child.name for child in current.iterdir()}
+        except OSError:
+            return False
+        if part not in names:
+            return False
+        current /= part
+    return True
+
+
+def validate_source_review_register(root: Path, current_date: date, source_urls: set[str]) -> list[str]:
+    path = root / "evals" / "source-review-register.json"
+    if not path.is_file():
+        return ["source review register is missing"] if root.resolve() == ROOT.resolve() else []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        return [f"source review register is invalid: {error}"]
+    if not isinstance(data, dict) or set(data) != REVIEW_REGISTER_FIELDS or data.get("schema_version") != "spring-source-review/1":
+        return ["source review register has invalid top-level fields"]
+    claims = data.get("claims")
+    if not isinstance(claims, list) or not claims:
+        return ["source review register claims must be non-empty"]
+    errors: list[str] = []
+    seen_ids: set[str] = set()
+    seen_sources: set[str] = set()
+    repository_root = root.resolve()
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, dict) or set(claim) != REVIEW_CLAIM_FIELDS:
+            errors.append(f"source review claim {index} has invalid fields")
+            continue
+        claim_id = claim.get("id")
+        if not isinstance(claim_id, str) or not claim_id or claim_id in seen_ids:
+            errors.append(f"source review claim {index} has an invalid or duplicate id")
+            continue
+        seen_ids.add(claim_id)
+        sources = claim.get("sources")
+        consumers = claim.get("consumers")
+        scope = claim.get("review_scope")
+        cadence = claim.get("review_every_days")
+        if (
+            not isinstance(sources, list)
+            or not sources
+            or not all(isinstance(value, str) and value for value in sources)
+            or len(set(sources)) != len(sources)
+        ):
+            errors.append(f"source review claim {claim_id} has invalid sources")
+        else:
+            for source in sources:
+                if source not in source_urls:
+                    errors.append(f"source review claim {claim_id} uses a source outside approved maps: {source}")
+                if source in seen_sources:
+                    errors.append(f"source review source is assigned to multiple claims: {source}")
+                seen_sources.add(source)
+        if (
+            not isinstance(consumers, list)
+            or not consumers
+            or not all(isinstance(value, str) and value for value in consumers)
+            or len(set(consumers)) != len(consumers)
+        ):
+            errors.append(f"source review claim {claim_id} has invalid consumers")
+        else:
+            for consumer in consumers:
+                portable = PurePosixPath(consumer)
+                candidate = root / Path(*portable.parts)
+                try:
+                    resolved = candidate.resolve(strict=True)
+                    resolved.relative_to(repository_root)
+                except (OSError, ValueError):
+                    errors.append(f"source review claim {claim_id} has an invalid consumer: {consumer}")
+                    continue
+                if (
+                    portable.is_absolute()
+                    or ".." in portable.parts
+                    or portable.as_posix() != consumer
+                    or not candidate.is_file()
+                    or not has_exact_case(candidate, root)
+                    or candidate.is_symlink()
+                    or bool(getattr(candidate, "is_junction", lambda: False)())
+                ):
+                    errors.append(f"source review claim {claim_id} has an invalid consumer: {consumer}")
+        if (
+            not isinstance(scope, list)
+            or not scope
+            or not all(isinstance(value, str) and value for value in scope)
+            or len(set(scope)) != len(scope)
+        ):
+            errors.append(f"source review claim {claim_id} has an invalid review_scope")
+        if not isinstance(cadence, int) or cadence not in REVIEW_CADENCES:
+            errors.append(f"source review claim {claim_id} has an invalid cadence")
+        reviewed_on = claim.get("reviewed_on")
+        if not isinstance(reviewed_on, str):
+            errors.append(f"source review claim {claim_id} has an invalid reviewed_on date")
+            continue
+        try:
+            reviewed_date = date.fromisoformat(reviewed_on)
+        except ValueError:
+            errors.append(f"source review claim {claim_id} has an invalid reviewed_on date")
+            continue
+        age = (current_date - reviewed_date).days
+        if age < 0:
+            errors.append(f"source review claim {claim_id} is future-dated")
+        elif isinstance(cadence, int) and age > cadence:
+            errors.append(f"source review claim {claim_id} is stale ({age} days > {cadence})")
+    return errors
 
 
 def validate_source_policy(
@@ -135,6 +252,9 @@ def validate_source_policy(
             if len(locations) > 1:
                 joined = ", ".join(str(location) for location in sorted(locations))
                 errors.append(f"duplicate URL across source maps in {skill_root}: {url} ({joined})")
+
+    source_urls = {url for urls in urls_by_skill.values() for url in urls}
+    errors.extend(validate_source_review_register(root, current_date, source_urls))
 
     return errors
 

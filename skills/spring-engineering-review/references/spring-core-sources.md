@@ -49,7 +49,6 @@ Checked on: 2026-07-12. Use this map for discovery, then cite the exact versione
 - Observability: https://docs.spring.io/spring-boot/reference/actuator/observability.html
 - Metrics: https://docs.spring.io/spring-boot/reference/actuator/metrics.html
 - Tracing: https://docs.spring.io/spring-boot/reference/actuator/tracing.html
-- Native images: https://docs.spring.io/spring-boot/reference/packaging/native-image/introducing-graalvm-native-images.html
 - Spring Boot project page and release notes entry point: https://spring.io/projects/spring-boot/
 
 ## Spring Framework

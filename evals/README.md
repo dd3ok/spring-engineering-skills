@@ -1,6 +1,6 @@
 # Evaluation Contracts
 
-`routing-cases.json` checks semantic ownership and reference-routing specification drift. `expected_refs` is the exact allowed reference set at the routing checkpoint encoded by each prompt; every unlisted reference is implicitly forbidden, while `forbidden_refs` records the explicit negative partition for dedicated skills and highlights important review boundaries. Re-evaluate routing when repository or runtime evidence adds a stack signal; the Kafka evidence cases demonstrate this second checkpoint. `review-routing-policy.json` pins the review route union and requires case coverage for every route. These contracts do not test model behavior or actual load traces.
+`routing-cases.json` checks semantic ownership and reference-routing specification drift. `expected_refs` is the exact allowed reference set at the routing checkpoint encoded by each prompt; every unlisted reference is implicitly forbidden, while `forbidden_refs` records the explicit negative partition for dedicated skills and highlights important review boundaries. Fixed `train` and `validation` splits cover every skill and non-activation cases. Re-evaluate routing when repository or runtime evidence adds a stack signal; the Kafka evidence cases demonstrate this second checkpoint. `review-routing-policy.json` pins the review route union and requires case coverage for every route. These contracts do not test model behavior or actual load traces.
 
 `behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A behavior case passing once is a smoke test, not a statistical quality claim.
 
@@ -18,21 +18,32 @@ Export prompts without leaking expected routes:
 python scripts/score_routing_results.py --emit-prompts dist/routing-prompts.jsonl
 ```
 
-Run each prompt in a fresh task with all seven skills installed. Record the skill selected by the host's trace or skill-activation signal, not a textual guess in the model answer. Use `null` when no skill was selected:
+Run each prompt three times in a fresh task with all seven skills installed. Record the skill selected by the host's trace or skill-activation signal, not a textual guess in the model answer. Use `null` when no skill was selected:
 
 ```json
-{"case_id":"broad-review","selected_skill":"spring-engineering-review","host":"codex","model":"record-the-observed-model"}
-{"case_id":"ordinary-spring-question","selected_skill":null,"host":"codex","model":"record-the-observed-model"}
-{"case_id":"korean-compound-evidence-first","selected_skill":"spring-evidence-collector","handoff_skills":["spring-engineering-review"],"host":"codex","model":"record-the-observed-model"}
+{"case_id":"broad-review","run_id":"run-1","selected_skill":"spring-engineering-review","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation_kind":"host-activation-trace","trace_id":"host-trace-1"}
+{"case_id":"ordinary-spring-question","run_id":"run-1","selected_skill":null,"host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation_kind":"host-activation-trace","trace_id":"host-trace-2"}
 ```
 
 `selected_skill` is the initial owner used for routing accuracy. Record later peer-skill transitions in the optional `handoff_skills` array. Store one JSON object per line, then score the run:
 
 ```text
-python scripts/score_routing_results.py dist/routing-results.jsonl --json-report dist/routing-report.json
+python scripts/score_routing_results.py dist/routing-results.jsonl --expected-runs 3 --strict --json-report dist/routing-report.json
 ```
 
-The report measures overall and per-channel accuracy, false activations, missed activations, and wrong-skill selections. Add `--strict` only when every mismatch should produce a failing exit code. Add `--allow-partial` for a deliberately sampled smoke test. Live model calls and credentials are intentionally outside the required CI path.
+The report measures per-run and per-case accuracy, train/validation and channel results, false activations, missed activations, and wrong-skill selections. A case passes when more than half of its runs select the expected route. `--strict` is the release gate and requires the canonical case suite plus at least three complete, traced runs per case; it cannot be combined with `--allow-partial`, which is only for a deliberately sampled smoke test. The release target is 100% exact-name selection, at least 90% validation accuracy, at most 5% false activation, and at most 10% missed activation; report these as observations for the recorded host, model, and commit rather than portable guarantees. Live model calls and credentials are intentionally outside required CI.
+
+For output evaluation, run each `behavior-cases.json` prompt without exposing its rubric. Store raw outputs outside Git, record their SHA-256 hashes, and have an independent grader produce a JSONL manifest. Score three with-skill runs and one without-skill baseline per case:
+
+```json
+{"case_id":"review-web-security","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
+```
+
+```text
+python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --json-report dist/behavior-report.json
+```
+
+Only `with-skill` runs contribute to the release score; `without-skill` is a separately reported comparison baseline. The release gate requires the canonical rubric suite, at least 95% global and 90% per-skill `must` pass rates, zero failed or unclear `must_not` grades, and no `must` criterion that is non-passing in a majority of repeated runs. Custom case files remain available for non-strict experiments. A grader result is evidence only for the recorded output, host, model, commit, and rubric; it is not a deterministic unit test.
 
 `source-publisher-policy.json` is the default-deny registry for URLs in `*sources.md`. Direct publisher/project/standards documentation and explicitly classified supporting authorities are separate lists; GitHub links additionally require an approved project owner.
 

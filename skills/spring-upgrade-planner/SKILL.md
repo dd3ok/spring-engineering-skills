@@ -1,6 +1,6 @@
 ---
 name: spring-upgrade-planner
-description: 'Produces an evidence-backed, staged upgrade plan for Spring, Java/Kotlin, Maven, and Gradle. Use to select supported targets, map version hops and compatibility gates, and plan rollout and rollback; bundled scripts require Python 3.12+, and dependency edits or migration recipes require a separate implementation request.'
+description: 'Use this skill when the user asks to select or verify supported Spring Boot/Cloud, Java/Kotlin, Maven, or Gradle targets; create a staged, reversible migration plan; or implement or validate a spring-upgrade-plan/2 consumer. Use it for compatibility gates, version-hop sequencing, rollout, and rollback. Do not use it merely to review an existing migration implementation or to apply dependency or source changes. Bundled scripts require Python 3.12+.'
 ---
 
 # Spring Upgrade Planner
@@ -9,7 +9,7 @@ Plan upgrades as compatibility and behavior migrations, not version-number subst
 
 ## Load Order
 
-Load `references/upgrade-playbook.md` for every plan. Load `references/upgrade-plan.schema.json` when implementing a consumer or manually authoring plan JSON; use the supplied validator for provenance and cross-field checks. Load `references/official-sources.md` before asserting target support, migration requirements, or current releases.
+Load `references/upgrade-playbook.md` for every plan. Load `references/upgrade-plan.schema.json` when implementing a consumer or manually authoring plan JSON; use the supplied validator for provenance and cross-field checks. Load `references/spring-cloud-compatibility-policy.json` when validating an offline Spring Boot/Spring Cloud target pair. Load `references/official-sources.md` before asserting target support, migration requirements, or current releases.
 
 ## Workflow
 

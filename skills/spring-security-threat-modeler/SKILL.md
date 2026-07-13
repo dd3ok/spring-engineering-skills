@@ -1,6 +1,6 @@
 ---
 name: spring-security-threat-modeler
-description: 'Builds an evidence-backed threat model for Spring HTTP, reactive, messaging, data, management, and outbound-integration surfaces. Use to map trust boundaries, abuse paths, controls, and residual risk; it is not an active penetration-testing workflow or legal/compliance advice.'
+description: 'Use this skill when the user asks to build an evidence-backed threat model for Spring HTTP, reactive, messaging, data, management, or outbound-integration surfaces. Use it to map assets, actors, trust boundaries, abuse paths, controls, residual risk, and testable acceptance criteria. Do not use it for active penetration testing, a CVE lookup, or legal/compliance advice.'
 ---
 
 # Spring Security Threat Modeler

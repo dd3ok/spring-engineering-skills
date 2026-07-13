@@ -1,6 +1,6 @@
 # Messaging and Integration Review Rules
 
-Use this file only when RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, JMS, or complex message-flow design is in scope. Use `kafka-rules.md` when Kafka is also in scope.
+Use this file only when RabbitMQ/AMQP, Pulsar, Spring Integration, Spring Cloud Stream, JMS, or complex message-flow design is in scope. Also select the `kafka` route defined in `SKILL.md` when Kafka is in scope.
 
 ## Shared Messaging Rules
 

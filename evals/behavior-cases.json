@@ -62,5 +62,37 @@
     "prompt": "Review source-only Redis cache stampede controls and pool configuration. No runtime artifacts are available and no performance diagnosis was requested.",
     "must": ["Perform a conditional static risk review", "Distinguish configuration risk from measured bottleneck", "Recommend verification evidence"],
     "must_not": ["Claim a confirmed runtime bottleneck", "Switch to the performance investigator", "Require unrelated Spring AI or Batch references"]
+  },
+  {
+    "id": "review-boot4-evidence-scoped-migration",
+    "skill": "spring-engineering-review",
+    "artifact_mode": "synthetic-inline",
+    "prompt": "Review a proposed Spring Boot 3.5 to 4.1 migration for a Kotlin MVC service that uses Jackson customizers, MockMvc, TestRestTemplate, and embedded Tomcat. It does not use Undertow, Pulsar, Batch, or native images.",
+    "must": ["Check the Boot 4 bridge and skipped release notes", "Assess applicable starter, Jackson 3, Kotlin, Servlet, and test changes", "Tie exact requirements to target-version sources"],
+    "must_not": ["Add Undertow, Pulsar, Batch, or native-image migration work", "Treat every Boot 4 change as applicable", "Create or apply the upgrade plan"]
+  },
+  {
+    "id": "review-batch6-restartable-concurrent-job",
+    "skill": "spring-engineering-review",
+    "artifact_mode": "synthetic-inline",
+    "prompt": "Review a Spring Batch 6 job that must restart after failure and may run partitions concurrently. It relies on @EnableBatchProcessing defaults and does not declare JDBC or Mongo batch infrastructure.",
+    "must": ["Identify the actual JobRepository", "Explain resourceless restart and concurrency limits", "Require durable store-specific infrastructure for the stated contract"],
+    "must_not": ["Claim the default repository is durable", "Require JDBC for every one-shot non-concurrent job", "Run the job"]
+  },
+  {
+    "id": "review-spring-ai-webflux-tool-blocking",
+    "skill": "spring-engineering-review",
+    "artifact_mode": "synthetic-inline",
+    "prompt": "Review a WebFlux Spring AI 2 service that performs non-streaming ChatClient calls and tool calling directly in request pipelines, customizes only WebClient, and expects one complete Micrometer span chain.",
+    "must": ["Distinguish streaming and non-streaming execution models", "Assess event-loop blocking and both HTTP clients", "Assess advisor scheduler, cancellation, and observation topology"],
+    "must_not": ["Claim every Spring AI call is non-blocking", "Invent a thread-pool size without measurements", "Present MCP Security as universally production-ready"]
+  },
+  {
+    "id": "review-aot-kubernetes-kotlin-conditions",
+    "skill": "spring-engineering-review",
+    "artifact_mode": "synthetic-inline",
+    "prompt": "Review an AOT-enabled Kotlin Spring service on Linux Kubernetes. Runtime profiles change bean-producing conditions, an @Bean method returns Object, the image uses latest, the pod runs as root with default capabilities, and probes exist only on a separate management port. The service does not use JPA.",
+    "must": ["Assess build-time bean graph and precise bean types", "Separate JVM, JVM AOT, and native verification", "Assess immutable image identity, restricted pod controls, and main-port probes"],
+    "must_not": ["Require kotlin-jpa without JPA or generic no-arg without framework and annotation evidence", "Recommend native image without an explicit need", "Put shared external dependencies in liveness"]
   }
 ]
