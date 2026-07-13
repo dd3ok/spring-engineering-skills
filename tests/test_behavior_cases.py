@@ -28,6 +28,73 @@ class BehaviorCaseTests(unittest.TestCase):
                 errors = validate_behavior_cases.validate_cases()
         self.assertTrue(any("contradicts itself" in error for error in errors))
 
+    def test_korean_behavior_coverage_is_required(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        cases = [
+            case
+            for case in cases
+            if case.get("response_language") != "ko"
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertIn("behavior cases require at least 2 Korean prompts", errors)
+
+    def test_unlabeled_mixed_language_prompt_is_not_forced_to_korean(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        cases[0]["prompt"] = "Explain the field 이름 without changing output language"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertEqual(errors, [])
+
+    def test_substantive_korean_prompt_requires_language_declaration(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        cases[0]["prompt"] = "운영 환경에서 수집한 근거 없이 병목을 확정하지 마세요"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("substantive Korean prompt must require" in error for error in errors))
+
+    def test_korean_response_language_requires_rubric(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        korean = next(case for case in cases if case.get("response_language") == "ko")
+        korean["must"].remove(validate_behavior_cases.KOREAN_RESPONSE_CRITERION)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("must require a Korean response" in error for error in errors))
+
+    def test_invalid_korean_rubric_type_returns_an_error(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        korean = next(case for case in cases if case.get("response_language") == "ko")
+        korean["must"] = None
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("must must be non-empty strings" in error for error in errors))
+
+    def test_korean_coverage_rejects_token_only_localization(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        korean = next(case for case in cases if case.get("response_language") == "ko")
+        korean["prompt"] = "Diagnose this latency 병목"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("requires a substantive Korean prompt" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

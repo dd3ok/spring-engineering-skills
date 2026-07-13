@@ -4,6 +4,8 @@
 
 `behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A behavior case passing once is a smoke test, not a statistical quality claim.
 
+The behavior suite includes Korean prompts for evidence restraint, threat modeling, and upgrade ambiguity. A Korean prompt declares `response_language: ko` and includes a Korean-response rubric item. Keep at least two such cases so localized output behavior does not silently fall out of the contract.
+
 Host runtimes differ in discovery and activation. Test semantic routing and named selection separately, and record host behavior as an observation rather than a portable skill guarantee.
 
 The 0.1.0 pre-release used 12 fresh Codex/GPT-5 tasks as a one-pass route-label classification smoke: eight single-skill requests, two non-activation requests, and two evidence-first handoffs. All 12 self-reported the intended label after the expected label was withheld; three fresh checks after the final description edit also matched. The compact [observation record](route-label-smoke-2026-07-12.json) preserves the expected and observed labels. This is useful rename and boundary evidence, but it is not a host activation trace, a repeated statistical evaluation, or a portable accuracy guarantee.
