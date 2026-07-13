@@ -42,9 +42,10 @@ class CheckSpringCloudPolicyTests(unittest.TestCase):
             check_spring_cloud_policy.subprocess,
             "run",
             side_effect=subprocess.TimeoutExpired(cmd="worker", timeout=0.01),
-        ):
+        ) as run:
             with self.assertRaises(TimeoutError):
                 check_spring_cloud_policy.fetch_with_deadline("https://spring.io/projects/spring-cloud/", 0.01)
+        self.assertEqual(run.call_args.kwargs["timeout"], 0.01)
 
     def test_html_text_is_bounded_and_normalized(self) -> None:
         payload = b"<html><body><p>2025.1.x</p><p>4.0.x, 4.1.x</p></body></html>"

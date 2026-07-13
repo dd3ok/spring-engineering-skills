@@ -129,6 +129,8 @@ def fetch_with_deadline(url: str, timeout: float) -> bytes:
         raise ValueError("timeout must be a positive finite number")
     command = (sys.executable, str(Path(__file__).resolve()), "--fetch-only", url, "--timeout", str(timeout))
     try:
+        # This is the authoritative end-to-end deadline. Keep it equal to the caller's budget so
+        # process startup, DNS, redirects, headers, and body reads cannot extend the wall clock.
         completed = subprocess.run(command, capture_output=True, check=False, timeout=timeout)
     except subprocess.TimeoutExpired as error:
         raise TimeoutError("Spring Cloud policy fetch exceeded its wall-clock deadline") from error
