@@ -134,6 +134,21 @@ class RoutingContractTests(unittest.TestCase):
         self.assertIn("recommend `spring-evidence-collector` by exact name", skill)
         self.assertIn("do not assume collection has run", skill)
 
+    def test_application_implementation_boundaries_are_explicit(self) -> None:
+        cases = {case["id"]: case for case in validate_routing_contract.load_cases()}
+        for case_id in ("evidence-schema-consumer", "upgrade-plan-schema-consumer"):
+            self.assertIn("spring-application-developer", cases[case_id]["forbidden_skills"])
+        self.assertEqual(
+            cases["compound-modulith-implementation"]["expected_skill"],
+            "spring-application-developer",
+        )
+        self.assertEqual(
+            cases["apply-approved-bom-change"]["expected_skill"],
+            "spring-application-developer",
+        )
+        self.assertEqual(cases["apply-approved-bom-change"]["activation_channel"], "semantic")
+        self.assertEqual(cases["apply-approved-bom-change"]["split"], "validation")
+
 
 if __name__ == "__main__":
     unittest.main()

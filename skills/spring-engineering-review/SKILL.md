@@ -1,6 +1,6 @@
 ---
 name: spring-engineering-review
-description: 'Use this skill when the user asks for an evidence-ranked static engineering review of a Spring or Spring Boot repository, code, configuration, dependencies, architecture, security controls, data or messaging design, production readiness, existing migration claims, or static capacity design against engineering best practices. Do not use it to create upgrade plans, diagnose runtime artifacts, build threat models, plan test backlogs, verify Modulith graphs, or answer ordinary Spring questions.'
+description: 'Use this skill when the user asks for an evidence-ranked static engineering review of a Spring or Spring Boot repository, code, configuration, dependencies, architecture, security controls, data or messaging design, production readiness, existing migration claims, or static capacity design against engineering best practices. Do not use it to implement changes, create upgrade plans, diagnose runtime artifacts, build threat models, plan test backlogs, verify Modulith graphs, or answer ordinary Spring questions.'
 ---
 
 # Spring Engineering Review
@@ -43,11 +43,11 @@ Use this deterministic, additive load order:
 | Version-specific Spring AI, Batch, Modulith, GraphQL/gRPC, Authorization Server, Session, HATEOAS, LDAP | `version-specialized` | `references/specialized-sources.md` |
 | Version-specific JVM, performance, testing, Kubernetes, or background research | `version-operations` | `references/operations-sources.md` |
 
-Use dependency IDs and runtime terms as routing hints for the table. Treat Spring Shell as CLI- and version-specific, and Spring Web Flow or other Attic projects as legacy migration concerns.
+Use dependency IDs and runtime terms as routing hints for the table. Treat Spring Shell as an active, version-specific CLI surface. Treat Spring Web Flow as an active, version-specific project surface. Treat only projects currently listed under "Projects in the Attic" on the official Spring projects page as legacy migration concerns.
 
 ## Ownership Gate
 
-Do not produce a dedicated skill's primary output through this broad review. Hand off deterministic repository evidence packs to `spring-evidence-collector`, target selection and staged upgrade plans to `spring-upgrade-planner`, runtime artifact interpretation and causal bottleneck diagnosis to `spring-performance-investigator`, system threat models to `spring-security-threat-modeler`, risk-ranked test backlogs to `spring-test-gap-planner`, and explicit module graphs or Modulith verification to `spring-modulith-auditor`. Recommend the exact skill name and required inputs; do not assume the other skill has run. Continue only with a requested static source, configuration, design-risk, or existing-proposal review.
+Do not produce a dedicated skill's primary output through this broad review. Hand off application code, test, configuration, migration, or dependency edits to `spring-application-developer`, deterministic repository evidence packs to `spring-evidence-collector`, target selection and staged upgrade plans to `spring-upgrade-planner`, runtime artifact interpretation and causal bottleneck diagnosis to `spring-performance-investigator`, system threat models to `spring-security-threat-modeler`, risk-ranked test backlogs to `spring-test-gap-planner`, and explicit module graphs or Modulith verification to `spring-modulith-auditor`. Recommend the exact skill name and required inputs; do not assume the other skill has run. Continue only with a requested static source, configuration, design-risk, or existing-proposal review.
 
 ## Review Safety
 

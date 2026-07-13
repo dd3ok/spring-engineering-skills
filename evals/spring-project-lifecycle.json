@@ -1,0 +1,37 @@
+{
+  "schema_version": "spring-project-lifecycle/1",
+  "source_locator": "https://spring.io/projects/",
+  "reviewed_on": "2026-07-13",
+  "review_every_days": 30,
+  "attic_marker": "Projects in the Attic",
+  "claims": [
+    {
+      "id": "spring-web-flow-active",
+      "project_name": "Spring Web Flow",
+      "project_locator": "https://spring.io/projects/spring-webflow",
+      "status": "active",
+      "consumers": [
+        {
+          "path": "skills/spring-engineering-review/SKILL.md",
+          "marker": "Treat Spring Web Flow as an active, version-specific project surface."
+        },
+        {
+          "path": "skills/spring-engineering-review/references/specialized-sources.md",
+          "marker": "Spring Web Flow project page (active project)"
+        }
+      ]
+    },
+    {
+      "id": "spring-cloud-contract-attic",
+      "project_name": "Spring Cloud Contract",
+      "project_locator": "https://github.com/spring-cloud/spring-cloud-contract",
+      "status": "attic",
+      "consumers": [
+        {
+          "path": "skills/spring-test-gap-planner/references/official-sources.md",
+          "marker": "Spring Cloud Contract](https://docs.spring.io/spring-cloud-contract/reference/) — Projects in the Attic"
+        }
+      ]
+    }
+  ]
+}

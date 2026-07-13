@@ -20,7 +20,8 @@
       "references/kafka-rules.md"
     ],
     "forbidden_skills": [
-      "spring-evidence-collector"
+      "spring-evidence-collector",
+      "spring-application-developer"
     ],
     "intent_family": "spring-engineering-review",
     "split": "train"
@@ -64,7 +65,8 @@
       "references/official-sources.md"
     ],
     "forbidden_skills": [
-      "spring-upgrade-planner"
+      "spring-upgrade-planner",
+      "spring-application-developer"
     ],
     "intent_family": "spring-evidence-collector",
     "split": "train"
@@ -133,7 +135,8 @@
       "references/spring-cloud-compatibility-policy.json"
     ],
     "forbidden_skills": [
-      "spring-evidence-collector"
+      "spring-evidence-collector",
+      "spring-application-developer"
     ],
     "intent_family": "spring-upgrade-planner",
     "split": "train"
@@ -234,7 +237,8 @@
       "references/official-sources.md"
     ],
     "forbidden_skills": [
-      "spring-engineering-review"
+      "spring-engineering-review",
+      "spring-application-developer"
     ],
     "intent_family": "spring-modulith-auditor",
     "split": "train"
@@ -382,7 +386,8 @@
       "spring-performance-investigator",
       "spring-security-threat-modeler",
       "spring-test-gap-planner",
-      "spring-modulith-auditor"
+      "spring-modulith-auditor",
+      "spring-application-developer"
     ],
     "intent_family": "no-activation",
     "split": "train"
@@ -434,7 +439,8 @@
       "references/spring-core-sources.md"
     ],
     "forbidden_skills": [
-      "spring-security-threat-modeler"
+      "spring-security-threat-modeler",
+      "spring-application-developer"
     ],
     "intent_family": "spring-engineering-review",
     "split": "validation"
@@ -949,13 +955,14 @@
   },
   {
     "id": "cve-triage-not-threat-model",
-    "prompt": "Look up whether this library version has a published CVE and patch it",
+    "prompt": "Look up whether this library version has a published CVE and identify the patched version",
     "expected_skill": null,
     "activation_channel": "none",
     "route_signals": [],
     "expected_refs": [],
     "forbidden_skills": [
-      "spring-security-threat-modeler"
+      "spring-security-threat-modeler",
+      "spring-application-developer"
     ],
     "intent_family": "no-activation",
     "split": "train"
@@ -1109,7 +1116,8 @@
     "forbidden_skills": [
       "spring-engineering-review",
       "spring-evidence-collector",
-      "spring-upgrade-planner"
+      "spring-upgrade-planner",
+      "spring-application-developer"
     ],
     "intent_family": "no-activation",
     "split": "train"
@@ -1123,7 +1131,8 @@
     "expected_refs": [],
     "forbidden_skills": [
       "spring-security-threat-modeler",
-      "spring-engineering-review"
+      "spring-engineering-review",
+      "spring-application-developer"
     ],
     "intent_family": "no-activation",
     "split": "train"
@@ -1142,9 +1151,118 @@
       "references/official-sources.md"
     ],
     "forbidden_skills": [
-      "spring-engineering-review"
+      "spring-engineering-review",
+      "spring-application-developer"
     ],
     "intent_family": "spring-modulith-auditor",
     "split": "validation"
+  },
+  {
+    "id": "bounded-spring-implementation",
+    "prompt": "Implement a bounded fix for transactional self-invocation in this existing Spring service and add a focused regression test",
+    "expected_skill": "spring-application-developer",
+    "activation_channel": "semantic",
+    "route_signals": [
+      "bounded fix",
+      "regression test"
+    ],
+    "expected_refs": [
+      "references/implementation-playbook.md"
+    ],
+    "forbidden_refs": [
+      "references/official-sources.md"
+    ],
+    "forbidden_skills": [
+      "spring-engineering-review",
+      "spring-upgrade-planner"
+    ],
+    "intent_family": "spring-application-developer",
+    "split": "train"
+  },
+  {
+    "id": "explicit-greenfield-spring-implementation",
+    "prompt": "Use spring-application-developer to create a new Spring Boot 4.1 service with Java 25 and a focused smoke test",
+    "expected_skill": "spring-application-developer",
+    "activation_channel": "explicit-name",
+    "route_signals": [
+      "spring-application-developer",
+      "Spring Boot 4.1"
+    ],
+    "expected_refs": [
+      "references/implementation-playbook.md",
+      "references/official-sources.md"
+    ],
+    "forbidden_refs": [],
+    "forbidden_skills": [
+      "spring-engineering-review",
+      "spring-upgrade-planner"
+    ],
+    "intent_family": "spring-application-developer",
+    "split": "validation"
+  },
+  {
+    "id": "compound-modulith-implementation",
+    "prompt": "Audit the module cycle and then fix it by moving the Spring packages; the final output must be repository changes",
+    "expected_skill": "spring-application-developer",
+    "activation_channel": "semantic",
+    "route_signals": [
+      "fix it by moving the Spring packages",
+      "repository changes"
+    ],
+    "expected_refs": [
+      "references/implementation-playbook.md"
+    ],
+    "forbidden_refs": [
+      "references/official-sources.md"
+    ],
+    "forbidden_skills": [
+      "spring-modulith-auditor",
+      "spring-engineering-review"
+    ],
+    "intent_family": "spring-application-developer",
+    "split": "validation"
+  },
+  {
+    "id": "apply-approved-bom-change",
+    "prompt": "Apply the already approved Spring Boot 4.1.0 BOM and update the build declarations and focused tests without selecting a new target",
+    "expected_skill": "spring-application-developer",
+    "activation_channel": "semantic",
+    "route_signals": [
+      "approved Spring Boot 4.1.0 BOM",
+      "update the build declarations"
+    ],
+    "expected_refs": [
+      "references/implementation-playbook.md",
+      "references/official-sources.md"
+    ],
+    "forbidden_refs": [],
+    "forbidden_skills": [
+      "spring-upgrade-planner",
+      "spring-engineering-review"
+    ],
+    "intent_family": "spring-application-developer",
+    "split": "validation"
+  },
+  {
+    "id": "korean-greenfield-implementation",
+    "prompt": "빈 저장소에 공식 지원 버전을 확인해 Spring Boot REST API를 모범 사례로 만들고 테스트까지 추가해줘",
+    "expected_skill": "spring-application-developer",
+    "activation_channel": "semantic",
+    "route_signals": [
+      "빈 저장소",
+      "만들고 테스트"
+    ],
+    "expected_refs": [
+      "references/implementation-playbook.md",
+      "references/official-sources.md"
+    ],
+    "forbidden_refs": [],
+    "forbidden_skills": [
+      "spring-engineering-review",
+      "spring-upgrade-planner",
+      "spring-test-gap-planner"
+    ],
+    "intent_family": "spring-application-developer",
+    "split": "train"
   }
 ]

@@ -42,6 +42,7 @@ class ValidateAllTests(unittest.TestCase):
         self.assertIn("schedule:", workflow)
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("check_spring_cloud_policy.py --online", workflow)
+        self.assertIn("check_spring_project_lifecycle.py --online", workflow)
         self.assertIn("check_links.py --online", workflow)
         self.assertIn("--timeout 10 --retries 1 --workers 12", workflow)
         self.assertNotIn("pull_request:", workflow)
@@ -61,6 +62,7 @@ class ValidateAllTests(unittest.TestCase):
             "validate_routing_contract.py",
             "validate_behavior_cases.py",
             "check_spring_cloud_policy.py",
+            "check_spring_project_lifecycle.py",
             "unittest discover",
             "check_links.py --offline",
         ):

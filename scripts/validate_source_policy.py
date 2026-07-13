@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
@@ -174,7 +174,7 @@ def validate_source_policy(
     max_age_days: int = MAX_REVIEW_AGE_DAYS,
 ) -> list[str]:
     errors: list[str] = []
-    current_date = today or date.today()
+    current_date = today or datetime.now(UTC).date()
     files = source_files(root)
     if not files:
         return ["no official source maps found"]

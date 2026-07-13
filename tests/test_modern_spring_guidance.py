@@ -70,6 +70,26 @@ class ModernSpringGuidanceTests(unittest.TestCase):
         ):
             self.assertIn(value, specialized)
 
+    def test_project_lifecycle_claims_match_consumers(self) -> None:
+        skill = (ROOT / "skills" / "spring-engineering-review" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        specialized = (REVIEW / "specialized-sources.md").read_text(encoding="utf-8")
+        test_sources = (
+            ROOT / "skills" / "spring-test-gap-planner" / "references" / "official-sources.md"
+        ).read_text(encoding="utf-8")
+        catalog = json.loads(
+            (ROOT / "evals" / "spring-project-lifecycle.json").read_text(encoding="utf-8")
+        )
+        statuses = {claim["project_name"]: claim["status"] for claim in catalog["claims"]}
+        self.assertEqual(statuses["Spring Web Flow"], "active")
+        self.assertEqual(statuses["Spring Cloud Contract"], "attic")
+        self.assertIn("Spring Web Flow as an active", skill)
+        self.assertIn("Spring Web Flow project page (active project)", specialized)
+        self.assertIn("Spring Cloud Contract", test_sources)
+        self.assertIn("Projects in the Attic", test_sources)
+        self.assertNotIn("Spring Web Flow or other Attic projects", skill)
+
     def test_kotlin_publisher_is_official_without_broadening_unknown_publishers(self) -> None:
         policy = json.loads((ROOT / "evals" / "source-publisher-policy.json").read_text(encoding="utf-8"))
         self.assertIn("kotlinlang.org", policy["official_publishers"])

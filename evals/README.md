@@ -4,7 +4,7 @@
 
 `behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A behavior case passing once is a smoke test, not a statistical quality claim.
 
-The behavior suite includes Korean prompts for evidence restraint, threat modeling, and upgrade ambiguity. A Korean prompt declares `response_language: ko` and includes a Korean-response rubric item. Keep at least two such cases so localized output behavior does not silently fall out of the contract.
+The behavior suite includes Korean prompts for evidence restraint, threat modeling, upgrade ambiguity, and bounded implementation. A Korean prompt declares `response_language: ko` and includes a Korean-response rubric item. Keep at least two such cases so localized output behavior does not silently fall out of the contract.
 
 Host runtimes differ in discovery and activation. Test semantic routing and named selection separately, and record host behavior as an observation rather than a portable skill guarantee.
 
@@ -12,7 +12,7 @@ The 0.1.0 pre-release used 12 fresh Codex/GPT-5 tasks as a one-pass route-label 
 
 ## Observed Model Routing
 
-Installed skills expose their `name` and `description` metadata to a supporting host. A host may choose a matching skill implicitly; exact-name invocation remains the deterministic option when a task is ambiguous or the workflow is high risk. This repository has seven peer skills and no umbrella dispatcher skill.
+Installed skills expose their `name` and `description` metadata to a supporting host. A host may choose a matching skill implicitly; exact-name invocation remains the deterministic option when a task is ambiguous or the workflow is high risk. This repository has eight peer skills and no umbrella dispatcher skill.
 
 Export prompts without leaking expected routes:
 
@@ -20,7 +20,7 @@ Export prompts without leaking expected routes:
 python scripts/score_routing_results.py --emit-prompts dist/routing-prompts.jsonl
 ```
 
-Run each prompt three times in a fresh task with all seven skills installed. Record the skill selected by the host's trace or skill-activation signal, not a textual guess in the model answer. Use `null` when no skill was selected:
+Run each prompt three times in a fresh task with all eight skills installed. Record the skill selected by the host's trace or skill-activation signal, not a textual guess in the model answer. Use `null` when no skill was selected:
 
 ```json
 {"case_id":"broad-review","run_id":"run-1","selected_skill":"spring-engineering-review","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","observation_kind":"host-activation-trace","trace_id":"host-trace-1"}
@@ -48,5 +48,7 @@ python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --
 Only `with-skill` runs contribute to the release score; `without-skill` is a separately reported comparison baseline. The release gate requires the canonical rubric suite, at least 95% global and 90% per-skill `must` pass rates, zero failed or unclear `must_not` grades, and no `must` criterion that is non-passing in a majority of repeated runs. Custom case files remain available for non-strict experiments. A grader result is evidence only for the recorded output, host, model, commit, and rubric; it is not a deterministic unit test.
 
 `source-publisher-policy.json` is the default-deny registry for URLs in `*sources.md`. Direct publisher/project/standards documentation and explicitly classified supporting authorities are separate lists; GitHub links additionally require an approved project owner.
+
+`spring-project-lifecycle.json` binds active and Attic claims to exact consumer text and exact official project links. Offline validation checks the consumer bindings; the scheduled online check parses project anchors on the official Spring projects page. Source review dates use the UTC calendar date so local and CI freshness decisions agree.
 
 Run `python scripts/validate_behavior_cases.py` to validate case structure and skill coverage.
