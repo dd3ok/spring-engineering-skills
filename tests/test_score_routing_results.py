@@ -229,6 +229,20 @@ class ScoreRoutingResultsTests(unittest.TestCase):
             sys, "argv", ["score_routing_results.py", "results.jsonl", "--strict"]
         ), self.assertRaises(SystemExit):
             score_routing_results.parse_args()
+        with redirect_stderr(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_routing_results.py",
+                "results.jsonl",
+                "--strict",
+                "--expected-runs",
+                "3",
+                "--pass-threshold",
+                "0",
+            ],
+        ), self.assertRaises(SystemExit):
+            score_routing_results.parse_args()
 
     def test_strict_release_rejects_custom_case_suite(self) -> None:
         with self.assertRaisesRegex(ValueError, "canonical routing case suite"):

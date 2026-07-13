@@ -425,6 +425,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--strict cannot be combined with --allow-partial")
     if args.strict and args.expected_runs < 3:
         parser.error("--strict requires --expected-runs 3 or greater")
+    if args.strict and args.pass_threshold != 0.5:
+        parser.error("--strict requires the canonical 0.5 case-majority threshold")
     return args
 
 
