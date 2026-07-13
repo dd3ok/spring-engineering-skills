@@ -2,6 +2,12 @@
 
 All notable changes to Spring Engineering Skills are documented here.
 
+## 1.0.0 - 2026-07-13
+
+- Declared the seven skill names, activation boundaries, output ownership, versioned schemas, deterministic CLIs, and portability baseline as stable public contracts.
+- Clarified that skills return results in the host response by default and write saved artifacts only when explicitly requested.
+- Promoted the validated suite from public beta to its first stable release without changing the existing artifact schema identifiers.
+
 ## 0.2.0 - 2026-07-13
 
 - Enforced canonical, case-correct, repository-contained paths across skill and reference resources; added standalone Apache-2.0 licenses to every distributable skill.

@@ -12,10 +12,12 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_version_is_consistent_across_release_documents(self) -> None:
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
         self.assertRegex(version, r"^\d+\.\d+\.\d+$")
-        self.assertIn(f"**{version} (public beta)**", (ROOT / "README.md").read_text(encoding="utf-8"))
-        self.assertIn(f"**{version}(public beta)**", (ROOT / "README.ko.md").read_text(encoding="utf-8"))
-        self.assertIn(f"| Suite release | `{version}` (public beta) |", (ROOT / "README.md").read_text(encoding="utf-8"))
-        self.assertIn(f"| 스킬 모음 릴리스 | `{version}` (public beta) |", (ROOT / "README.ko.md").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(int(version.split(".", maxsplit=1)[0]), 1)
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        readme_ko = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+        release_badge = "https://img.shields.io/github/v/release/dd3ok/spring-engineering-skills"
+        self.assertIn(release_badge, readme)
+        self.assertIn(release_badge, readme_ko)
         self.assertRegex(
             (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"),
             rf"(?m)^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}$",

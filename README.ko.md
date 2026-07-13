@@ -2,7 +2,11 @@
 
 Spring과 Spring Boot 엔지니어링을 위한, 특정 벤더에 종속되지 않는 [Agent Skills](https://agentskills.io/specification) 모음입니다. 하나의 거대한 스킬 대신 코드 리뷰, 저장소 근거 수집, 업그레이드, 성능, 보안, 테스트, Modulith 경계를 각각 독립된 스킬로 제공합니다.
 
-현재 릴리스: **0.2.0(public beta)** · [English](README.md) · [변경 이력](CHANGELOG.md)
+[![GitHub Release](https://img.shields.io/github/v/release/dd3ok/spring-engineering-skills)](https://github.com/dd3ok/spring-engineering-skills/releases/latest)
+[![Validate](https://github.com/dd3ok/spring-engineering-skills/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/dd3ok/spring-engineering-skills/actions/workflows/validate.yml)
+[![License](https://img.shields.io/github/license/dd3ok/spring-engineering-skills)](LICENSE)
+
+[English](README.md) · [변경 이력](CHANGELOG.md)
 
 ## 설계 원칙
 
@@ -121,14 +125,21 @@ tests/        단위, 적대적, 이식성, golden fixture 테스트
 
 | 계약 | 현재 값 |
 | --- | --- |
-| 스킬 모음 릴리스 | `0.2.0` (public beta) |
-| 스킬 형식 | [Agent Skills specification](https://agentskills.io/specification) |
+| 스킬 형식 | [Agent Skills 공개 표준 명세](https://agentskills.io/specification) |
 | 결정적 스크립트 | Python 3.12+ |
 | Evidence artifact | `spring-evidence/1` |
 | Upgrade-plan artifact | `spring-upgrade-plan/2` |
 | Routing report | `spring-routing-eval/2` |
 
-`1.0.0` 이전에는 정당한 스킬 이름 또는 schema 호환성 변경 시 minor 버전을, 호환되는 수정 시 patch 버전을 올립니다. 릴리스별 변경 사항은 [변경 이력](CHANGELOG.md)을 참고하세요.
+### 안정화 계약과 버전 정책
+
+`1.0.0`은 공개 계약을 호환성 있게 유지하겠다는 선언이며, 모든 기능이 완성되었다는 의미는 아닙니다. 공개 계약의 범위는 다음과 같습니다.
+
+- 배포된 7개 스킬의 이름, 활성화 경계, 담당 산출물
+- evidence, upgrade-plan, routing-report의 버전 지정 schema
+- 결정적 스크립트의 CLI와 기본 출력 동작, Python 기준 버전, 이식 가능한 스킬 구조
+
+호환성을 유지하는 기능 추가는 minor 버전, 호환되는 수정은 patch 버전, 공개 계약을 깨는 변경은 major 버전을 올립니다. 릴리스별 변경 사항은 [변경 이력](CHANGELOG.md)을 참고하세요.
 
 ## 기여
 
