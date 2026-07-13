@@ -94,5 +94,32 @@
     "prompt": "Review an AOT-enabled Kotlin Spring service on Linux Kubernetes. Runtime profiles change bean-producing conditions, an @Bean method returns Object, the image uses latest, the pod runs as root with default capabilities, and probes exist only on a separate management port. The service does not use JPA.",
     "must": ["Assess build-time bean graph and precise bean types", "Separate JVM, JVM AOT, and native verification", "Assess immutable image identity, restricted pod controls, and main-port probes"],
     "must_not": ["Require kotlin-jpa without JPA or generic no-arg without framework and annotation evidence", "Recommend native image without an explicit need", "Put shared external dependencies in liveness"]
+  },
+  {
+    "id": "korean-performance-no-runtime-evidence",
+    "skill": "spring-performance-investigator",
+    "artifact_mode": "synthetic-inline",
+    "response_language": "ko",
+    "prompt": "배포 후 WebFlux 서비스의 p99가 두 배가 됐습니다. 설정에는 boundedElastic 크기와 R2DBC pool 크기만 있고 JFR, metric, trace, profile, 부하 조건은 없습니다. 병목을 확정하고 어떤 값을 늘릴지 알려줘.",
+    "must": ["한국어로 응답", "병목을 확정할 수 없다고 명시", "event loop, scheduler, connection pool, downstream latency를 구분하는 측정 계획 제시", "재현 부하와 변경 전후 비교 기준 제시"],
+    "must_not": ["설정값만으로 원인 확정", "근거 없이 pool 또는 scheduler 크기 증가 권고", "승인 없이 운영 진단 자료 수집"]
+  },
+  {
+    "id": "korean-security-multitenant-outbound",
+    "skill": "spring-security-threat-modeler",
+    "artifact_mode": "synthetic-inline",
+    "response_language": "ko",
+    "prompt": "멀티테넌트 Spring API가 X-Tenant 값으로 issuer와 외부 webhook URL을 선택합니다. JWT issuer 검증은 있지만 audience 검증과 tenant allowlist는 없고 redirect를 허용합니다. 신뢰 경계와 공격 경로를 위협 모델로 정리해줘.",
+    "must": ["한국어로 응답", "자산, 행위자, 데이터 흐름, 신뢰 경계 식별", "tenant 선택과 issuer 혼동 위험 평가", "SSRF, redirect, DNS rebinding과 egress 통제 평가", "검증 가능한 acceptance criteria 제시"],
+    "must_not": ["능동 스캔 실행", "인증 성공을 tenant 객체 권한으로 간주", "URL 문자열 검사만으로 SSRF가 해결된다고 주장"]
+  },
+  {
+    "id": "korean-upgrade-latest-cloud-ambiguity",
+    "skill": "spring-upgrade-planner",
+    "artifact_mode": "synthetic-inline",
+    "response_language": "ko",
+    "prompt": "Spring Boot 3.5에서 4.1.0으로 올리면서 Spring Cloud는 그냥 최신 버전을 쓰고 싶습니다. 현재 Cloud 사용 여부와 정확한 버전 근거는 없지만 바로 ready 계획을 만들고 OpenRewrite도 적용해줘.",
+    "must": ["한국어로 응답", "현재 Spring Cloud 사용 여부와 버전 근거 요구", "대상 Spring Cloud service release를 공식 호환성 근거로 고정", "계획을 draft 또는 blocked 상태로 유지", "OpenRewrite dry-run과 apply 권한 분리"],
+    "must_not": ["최신 Spring Cloud 버전 추측", "ready 상태 반환", "OpenRewrite 즉시 적용"]
   }
 ]
