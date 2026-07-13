@@ -97,6 +97,21 @@ class UpgradePlannerTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "source ids"):
                     builder.build(evidence, "4.1.0", False, [source_id], False)
 
+    def test_cli_without_output_writes_only_to_stdout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = self.evidence_file(root, [])
+            result = subprocess.run(
+                [sys.executable, str(UPGRADE_SCRIPTS / "build_plan_skeleton.py"), str(evidence), "--target", "4.1.0"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["schema_version"], "spring-upgrade-plan/2")
+            self.assertEqual({path.name for path in root.iterdir()}, {evidence.name})
+
     def test_extreme_version_is_a_validation_error_not_an_exception(self) -> None:
         plan = {"schema_version": "spring-upgrade-plan/2", "status": "draft", "target": {"spring_boot": "9" * 5000 + ".0.0"}}
         errors = validator.validate(plan)

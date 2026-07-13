@@ -195,6 +195,13 @@ class SkillStructureTests(unittest.TestCase):
         self.assertIn("Otherwise keep the fact `inferred` and record a provenance gap", contract)
         self.assertIn("certainty labels describe evidence derivation, not truth or safety", contract)
 
+    def test_saved_artifacts_require_an_explicit_user_request(self) -> None:
+        collector = (ROOT / "skills" / "spring-evidence-collector" / "SKILL.md").read_text(encoding="utf-8")
+        planner = (ROOT / "skills" / "spring-upgrade-planner" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Use `--output <path>` only when the user asked for an artifact", collector)
+        self.assertIn("Use `--output <path>` only when the user asks for a saved artifact", planner)
+        self.assertIn("otherwise keep the generated JSON on stdout", planner)
+
     def test_runtime_artifact_handling_contract_is_pinned(self) -> None:
         skill = (ROOT / "skills" / "spring-performance-investigator" / "SKILL.md").read_text(encoding="utf-8")
         playbook = (ROOT / "skills" / "spring-performance-investigator" / "references" / "investigation-playbook.md").read_text(encoding="utf-8")
