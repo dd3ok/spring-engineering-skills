@@ -114,6 +114,14 @@ class ApplicationDeveloperTests(unittest.TestCase):
             "user-choice-or-metadata-default-project-format",
         )
         self.assertIn("metadata_sha256", policy["provenance_required"])
+        self.assertEqual(
+            policy["user_summary_rules"]["metadata_sha256"],
+            "first-12-lowercase-hex",
+        )
+        self.assertEqual(
+            policy["user_summary_rules"]["retrieved_at_utc"],
+            "RFC3339-UTC-seconds-with-Z",
+        )
         self.assertIn("generation_parameters", policy["provenance_required"])
         self.assertLess(set(policy["user_summary_required"]), set(policy["provenance_required"]))
         self.assertEqual(
@@ -122,7 +130,7 @@ class ApplicationDeveloperTests(unittest.TestCase):
         )
         self.assertEqual(
             policy["metadata"]["saved_snapshot"],
-            "only-when-user-requests-a-saved-artifact",
+            "user-requested-artifact-or-isolated-evaluation-evidence",
         )
 
         for source in (

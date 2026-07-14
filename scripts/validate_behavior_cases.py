@@ -120,6 +120,14 @@ def validate_cases() -> list[str]:
             errors.append(
                 f"{case_id or index} fixture fields require repository-fixture mode"
             )
+        source_artifact = case.get("with_skill_source_artifact")
+        if source_artifact is not None and (
+            artifact_mode != "repository-fixture"
+            or source_artifact != "initializr-metadata"
+        ):
+            errors.append(
+                f"{case_id or index} has an invalid with_skill_source_artifact"
+            )
         for field in ("must", "must_not"):
             values = case.get(field)
             if not isinstance(values, list) or not values or not all(isinstance(value, str) and value for value in values):

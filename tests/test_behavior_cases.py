@@ -17,7 +17,16 @@ import validate_behavior_cases  # noqa: E402
 class BehaviorCaseTests(unittest.TestCase):
     def test_repository_fixture_text_formats_have_stable_line_endings(self) -> None:
         attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
-        for pattern in ("*.java text eol=lf", "*.sql text eol=lf", "*.xml text eol=lf"):
+        for pattern in (
+            "*.java text eol=lf",
+            "*.sql text eol=lf",
+            "*.xml text eol=lf",
+            "*.bat text eol=crlf",
+            "*.cmd text eol=crlf",
+            ".gitignore text eol=lf",
+            ".editorconfig text eol=lf",
+            "Dockerfile text eol=lf",
+        ):
             self.assertIn(pattern, attributes)
 
     def test_behavior_case_contract_is_valid(self) -> None:
@@ -82,6 +91,19 @@ class BehaviorCaseTests(unittest.TestCase):
             with patch.object(validate_behavior_cases, "CASES_PATH", path):
                 errors = validate_behavior_cases.validate_cases()
         self.assertTrue(any("fixture fields require repository-fixture mode" in error for error in errors))
+
+    def test_initializr_source_artifact_requires_repository_fixture_mode(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        case = next(item for item in cases if item.get("with_skill_source_artifact"))
+        case["artifact_mode"] = "synthetic-inline"
+        case.pop("fixture_path")
+        case.pop("fixture_tree_sha256")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("invalid with_skill_source_artifact" in error for error in errors))
 
     def test_repository_fixture_hash_must_match_the_fixture_content(self) -> None:
         cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))

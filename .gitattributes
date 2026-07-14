@@ -14,7 +14,12 @@
 *.xml text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+.editorconfig text eol=lf
 .gitattributes text eol=lf
+.gitignore text eol=lf
+Dockerfile text eol=lf
 gradlew text eol=lf
 LICENSE text eol=lf
 mvnw text eol=lf

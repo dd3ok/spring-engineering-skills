@@ -46,6 +46,27 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
             "must_not_results": must_not or ["pass"],
         }
 
+    def initializr_payload(self) -> bytes:
+        def capability(default: str, *values: str) -> dict[str, object]:
+            return {
+                "default": default,
+                "values": [{"id": value, "name": value} for value in values],
+            }
+
+        metadata = {
+            "bootVersion": capability("4.1.0", "4.1.0"),
+            "javaVersion": capability("17", "17"),
+            "type": capability("gradle-project", "gradle-project", "maven-project"),
+            "language": capability("java", "java"),
+            "packaging": capability("jar", "jar"),
+            "configurationFileFormat": capability("properties", "properties"),
+        }
+        metadata["type"]["values"][0]["tags"] = {
+            "build": "gradle",
+            "format": "project",
+        }
+        return json.dumps(metadata).encode("utf-8")
+
     def bind_repository_artifact(
         self,
         root: Path,
@@ -53,7 +74,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
     ) -> tuple[dict[str, dict[str, object]], Path, Path, Path]:
         fixture_root = root / "fixtures"
         fixture = fixture_root / "case"
-        fixture.mkdir(parents=True)
+        fixture.mkdir(parents=True, exist_ok=True)
         (fixture / "original.txt").write_text("original", encoding="utf-8")
         artifact_root = root / "artifacts"
         run_root = (
@@ -208,6 +229,94 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         empty["changed_paths"] = []
         _, errors = score_behavior_results.score_results(cases, [empty], require_complete=False)
         self.assertTrue(any("has no changes" in error for error in errors))
+
+    def test_initializr_source_binding_verifies_and_reuses_content_addressed_bytes(self) -> None:
+        payload = self.initializr_payload()
+        digest = hashlib.sha256(payload).hexdigest()
+        records = []
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for run_id in ("with-1", "with-2"):
+                record = self.result(run_id, "with-skill")
+                cases, artifact_root, fixture_root, _ = self.bind_repository_artifact(
+                    root, record
+                )
+                cases["case"]["with_skill_source_artifact"] = "initializr-metadata"
+                record["initializr_metadata_sha256"] = digest
+                records.append(record)
+            source = artifact_root / ("a" * 40) / "sources" / "initializr" / f"{digest}.json"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(payload)
+            report, errors = score_behavior_results.score_results(
+                cases,
+                records,
+                expected_with_skill_runs=2,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                require_initializr_source_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertEqual(errors, [])
+        self.assertEqual(report["initializr_source_binding"]["verified_runs"], 2)
+        self.assertEqual(report["initializr_source_binding"]["unique_sources"], 1)
+
+    def test_required_initializr_source_binding_rejects_missing_or_tampered_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, _ = self.bind_repository_artifact(root, record)
+            cases["case"]["with_skill_source_artifact"] = "initializr-metadata"
+            _, missing_errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                require_complete=False,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_initializr_source_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+            self.assertTrue(any("lacks Initializr source binding" in error for error in missing_errors))
+
+            expected_payload = b"{}"
+            digest = hashlib.sha256(expected_payload).hexdigest()
+            record["initializr_metadata_sha256"] = digest
+            source = artifact_root / ("a" * 40) / "sources" / "initializr" / f"{digest}.json"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b'{"tampered":true}')
+            _, tampered_errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                require_complete=False,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_initializr_source_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertTrue(any("SHA-256 does not match" in error for error in tampered_errors))
+
+    def test_initializr_source_binding_is_rejected_for_other_cases_and_baselines(self) -> None:
+        digest = hashlib.sha256(self.initializr_payload()).hexdigest()
+        unrelated = self.result("with-1", "with-skill")
+        unrelated["initializr_metadata_sha256"] = digest
+        _, unrelated_errors = score_behavior_results.score_results(
+            self.cases, [unrelated], require_complete=False
+        )
+        self.assertTrue(any("unexpected Initializr source binding" in error for error in unrelated_errors))
+
+        baseline_cases = {
+            "case": {
+                **self.cases["case"],
+                "with_skill_source_artifact": "initializr-metadata",
+            }
+        }
+        baseline = self.result("without-1", "without-skill")
+        baseline["initializr_metadata_sha256"] = digest
+        _, baseline_errors = score_behavior_results.score_results(
+            baseline_cases, [baseline], require_complete=False
+        )
+        self.assertTrue(any("unexpected Initializr source binding" in error for error in baseline_errors))
 
     def test_repository_fixture_accepts_bound_changes_and_empty_baseline(self) -> None:
         cases = {
@@ -509,6 +618,14 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "invalid changed_paths"):
                 score_behavior_results.load_results(path)
 
+        record = self.result("with-1", "with-skill")
+        record["initializr_metadata_sha256"] = "not-a-sha"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "results.jsonl"
+            path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "invalid initializr_metadata_sha256"):
+                score_behavior_results.load_results(path)
+
     def test_artifact_binding_paths_are_portable_and_complete(self) -> None:
         record = self.result("with-1", "with-skill")
         record.update(
@@ -541,6 +658,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         report = {
             "summary": {"must_pass_rate": 1.0, "must_not_violations": 0},
             "release_gate_failures": [],
+            "failures": [],
         }
         with redirect_stderr(StringIO()), redirect_stdout(StringIO()), mock.patch.object(
             sys,
@@ -564,6 +682,36 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         self.assertFalse(score.call_args.kwargs["require_artifact_binding"])
         self.assertIsNone(score.call_args.kwargs["expected_skill_commit"])
 
+    def test_partial_cli_observed_failure_ignores_baseline_but_fails_with_skill(self) -> None:
+        base_report = {
+            "summary": {"must_pass_rate": 1.0, "must_not_violations": 0},
+            "release_gate_failures": ["behavior case or repeated-run coverage is incomplete"],
+        }
+        for condition, expected_exit in (("without-skill", 0), ("with-skill", 1)):
+            report = {
+                **base_report,
+                "failures": [{"case_id": "case", "condition": condition, "run_id": "run-1"}],
+            }
+            with self.subTest(condition=condition), redirect_stderr(
+                StringIO()
+            ), redirect_stdout(StringIO()), mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "score_behavior_results.py",
+                    "results.jsonl",
+                    "--allow-partial",
+                    "--fail-on-observed-failure",
+                ],
+            ), mock.patch.object(
+                score_behavior_results, "load_cases", return_value=self.cases
+            ), mock.patch.object(
+                score_behavior_results, "load_results", return_value=[]
+            ), mock.patch.object(
+                score_behavior_results, "score_results", return_value=(report, [])
+            ):
+                self.assertEqual(score_behavior_results.main(), expected_exit)
+
     def test_artifact_binding_cli_requires_root_and_expected_commit(self) -> None:
         with redirect_stderr(StringIO()), mock.patch.object(
             sys,
@@ -572,6 +720,17 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 "score_behavior_results.py",
                 "results.jsonl",
                 "--require-artifact-binding",
+            ],
+        ), self.assertRaises(SystemExit):
+            score_behavior_results.main()
+
+        with redirect_stderr(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_behavior_results.py",
+                "results.jsonl",
+                "--require-initializr-source-binding",
             ],
         ), self.assertRaises(SystemExit):
             score_behavior_results.main()

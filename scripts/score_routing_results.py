@@ -411,6 +411,11 @@ def parse_args() -> argparse.Namespace:
         help="Write case_id and prompt only; use '-' or omit OUTPUT for stdout.",
     )
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument(
+        "--fail-on-observed-failure",
+        action="store_true",
+        help="Return 1 when any evaluated routing observation is incorrect.",
+    )
     parser.add_argument("--expected-runs", type=int, default=1)
     parser.add_argument("--pass-threshold", type=float, default=0.5)
     parser.add_argument("--require-trace", action="store_true")
@@ -476,6 +481,17 @@ def main() -> int:
     if args.strict and gate_failures:
         for failure in gate_failures:
             print(f"RELEASE GATE: {failure}", file=sys.stderr)
+        return 1
+    observed_failures = report["failures"]
+    assert isinstance(observed_failures, list)
+    if args.fail_on_observed_failure and observed_failures:
+        for failure in observed_failures:
+            print(
+                "OBSERVED FAILURE: "
+                f"{failure['case_id']}/{failure['run_id']} expected={failure['expected_skill']!r} "
+                f"selected={failure['selected_skill']!r}",
+                file=sys.stderr,
+            )
         return 1
     return 0
 

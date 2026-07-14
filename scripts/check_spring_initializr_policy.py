@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import http.client
 import json
 import math
+import re
 import subprocess
 import sys
 import time
@@ -26,6 +28,7 @@ APPROVED_HOST = "start.spring.io"
 APPROVED_PATH = "/metadata/client"
 MAX_BODY_BYTES = 1024 * 1024
 MAX_ADDRESSES = 4
+COMMIT = re.compile(r"^[a-f0-9]{40}$")
 CAPABILITIES = (
     "bootVersion",
     "javaVersion",
@@ -116,16 +119,32 @@ def metadata_errors(payload: bytes) -> list[str]:
         }
         if default not in advertised:
             errors.append(f"Initializr metadata default is not advertised: {name}={default}")
+            continue
         if name == "type":
             selected = next(
                 (value for value in values if isinstance(value, dict) and value.get("id") == default),
                 None,
             )
             tags = selected.get("tags") if isinstance(selected, dict) else None
-            if not isinstance(tags, dict) or not isinstance(tags.get("build"), str) or not tags["build"]:
-                errors.append("Initializr default project type has no build tag")
-            if not isinstance(tags, dict) or tags.get("format") != "project":
-                errors.append("Initializr default project type is not a project format")
+            if not isinstance(tags, dict):
+                errors.append("Initializr default project type tags are missing or invalid")
+            else:
+                if not isinstance(tags.get("build"), str) or not tags["build"]:
+                    errors.append("Initializr default project type has no build tag")
+                if tags.get("format") != "project":
+                    errors.append("Initializr default project type is not a project format")
+            for project_type in values:
+                if not isinstance(project_type, dict) or project_type.get("id") == default:
+                    continue
+                project_tags = project_type.get("tags")
+                if not isinstance(project_tags, dict) or project_tags.get("format") != "project":
+                    continue
+                build = project_tags.get("build")
+                if not isinstance(build, str) or not build:
+                    errors.append(
+                        "Initializr project type has no build tag: "
+                        f"{project_type.get('id', '<missing-id>')}"
+                    )
     return errors
 
 
@@ -199,6 +218,22 @@ def fetch_with_deadline(url: str, accept: str, timeout: float) -> bytes:
     return completed.stdout
 
 
+def save_evaluation_source(payload: bytes, artifact_root: Path, skill_commit: str) -> Path:
+    if COMMIT.fullmatch(skill_commit) is None:
+        raise ValueError("skill_commit must be a lowercase 40-character commit")
+    digest = hashlib.sha256(payload).hexdigest()
+    destination = (
+        artifact_root / skill_commit / "sources" / "initializr" / f"{digest}.json"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if not destination.is_file() or destination.read_bytes() != payload:
+            raise ValueError("Initializr evaluation source path contains different bytes")
+        return destination
+    destination.write_bytes(payload)
+    return destination
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate the local Initializr contract and optionally check live metadata semantics."
@@ -206,9 +241,24 @@ def main() -> int:
     parser.add_argument("--policy", type=Path, default=POLICY_PATH)
     parser.add_argument("--online", action="store_true")
     parser.add_argument("--timeout", type=float, default=10.0)
+    parser.add_argument(
+        "--save-evaluation-source",
+        type=Path,
+        metavar="ARTIFACT_ROOT",
+        help="Save validated live bytes under a content-addressed evaluation-only path.",
+    )
+    parser.add_argument("--skill-commit")
     parser.add_argument("--fetch-only", metavar="URL", help=argparse.SUPPRESS)
     parser.add_argument("--accept", default=EXPECTED_ACCEPT, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.save_evaluation_source is not None and not args.online:
+        parser.error("--save-evaluation-source requires --online")
+    if args.save_evaluation_source is not None and (
+        not isinstance(args.skill_commit, str) or COMMIT.fullmatch(args.skill_commit) is None
+    ):
+        parser.error("--save-evaluation-source requires --skill-commit with 40 lowercase hex characters")
+    if args.skill_commit is not None and args.save_evaluation_source is None:
+        parser.error("--skill-commit requires --save-evaluation-source")
     if args.fetch_only is not None:
         try:
             sys.stdout.buffer.write(
@@ -220,6 +270,7 @@ def main() -> int:
         return 0
 
     source, accept, errors = load_contract(args.policy)
+    saved_source: Path | None = None
     if args.online and not errors and source is not None and accept is not None:
         try:
             payload = fetch_with_deadline(source, accept, args.timeout)
@@ -227,6 +278,15 @@ def main() -> int:
             errors.append(f"Initializr metadata check is inconclusive: {error}")
         else:
             errors.extend(metadata_errors(payload))
+            if not errors and args.save_evaluation_source is not None:
+                try:
+                    saved_source = save_evaluation_source(
+                        payload,
+                        args.save_evaluation_source,
+                        args.skill_commit,
+                    )
+                except (OSError, ValueError) as error:
+                    errors.append(f"Initializr evaluation source could not be saved: {error}")
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -235,6 +295,8 @@ def main() -> int:
         "Spring Initializr metadata contract is valid"
         + (" and matches live semantics." if args.online else ".")
     )
+    if saved_source is not None:
+        print(f"Initializr evaluation source: {saved_source}")
     return 0
 
 

@@ -7,16 +7,17 @@
 Use three evaluation tiers so routine validation stays cheap. Source-register, line-ending, and checker-only changes need only deterministic CI. A routing, prompt, rubric, or user-visible behavior change should run a sampled smoke: include every changed case, at least one positive case for each touched skill, two non-activation cases, and one compound handoff, normally 12-15 routing observations at one run each. Score those observations against the canonical case file without calling the result a release gate:
 
 ```text
-python scripts/score_routing_results.py dist/routing-smoke-results.jsonl --allow-partial --expected-runs 1 --require-trace --json-report dist/routing-smoke-report.json
+python scripts/score_routing_results.py dist/routing-smoke-results.jsonl --allow-partial --fail-on-observed-failure --expected-runs 1 --require-trace --json-report dist/routing-smoke-report.json
 ```
 
-For implementation behavior changes, use the two repository-fixture cases (`korean-existing-application-fix` and `developer-greenfield-unpinned-version`) with three with-skill runs and one baseline each, for eight artifact-bound results total:
+For implementation behavior changes, use the two repository-fixture cases (`korean-existing-application-fix` and `developer-greenfield-unpinned-version`) with three with-skill runs and one baseline each, for eight artifact-bound results total. Immediately before each greenfield with-skill run, capture the validated raw Initializr response under the artifact root; unchanged responses reuse the same content-addressed file:
 
 ```text
-python scripts/score_behavior_results.py dist/behavior-smoke-results.jsonl --allow-partial --require-artifact-binding --artifact-root dist/behavior-smoke-artifacts --expected-skill-commit <40-character-commit> --json-report dist/behavior-smoke-report.json
+python scripts/check_spring_initializr_policy.py --online --save-evaluation-source dist/behavior-smoke-artifacts --skill-commit <40-character-commit>
+python scripts/score_behavior_results.py dist/behavior-smoke-results.jsonl --allow-partial --fail-on-observed-failure --require-artifact-binding --require-initializr-source-binding --artifact-root dist/behavior-smoke-artifacts --expected-skill-commit <40-character-commit> --json-report dist/behavior-smoke-report.json
 ```
 
-Run the complete repeated `--strict` suites documented below only for a frozen release candidate. Partial reports intentionally list the unexecuted canonical cases as incomplete and must never be represented as release evidence.
+Run the complete repeated `--strict` suites documented below only for a frozen release candidate. `--fail-on-observed-failure` makes a sampled command fail when an evaluated routing observation is incorrect or an evaluated `with-skill` behavior grade is non-passing; it ignores unexecuted canonical cases and behavior baselines. Partial reports intentionally list the unexecuted canonical cases as incomplete and must never be represented as release evidence.
 
 For `repository-fixture` cases, first verify that the declared `fixture_tree_sha256` matches the fixture. Copy it to a fresh workspace under an artifact root and run the agent there. Use a canonical lowercase, hyphenated `run-id` and a unique `<skill-commit>/<case-id>/<condition>/<run-id>/workspace` directory for each result. Preserve the workspace for grading, then capture its changes to a sibling manifest outside the workspace:
 
@@ -24,7 +25,7 @@ For `repository-fixture` cases, first verify that the declared `fixture_tree_sha
 python scripts/capture_behavior_artifact.py --case-id <case-id> --fixture <fixture-path> --workspace <artifact-root>/<skill-commit>/<case-id>/<condition>/<run-id>/workspace --output <artifact-root>/<skill-commit>/<case-id>/<condition>/<run-id>/manifest.json
 ```
 
-The independent grader receives the raw response, pinned fixture, resulting workspace, and manifest. For artifact-bound scoring, record `artifact_manifest_sha256`; the scorer derives the manifest and workspace paths, verifies their physical identities, checks the expected skill commit and pinned fixture tree, and recomputes the manifest from the preserved workspace. Legacy `workspace_diff_sha256`, `changed_paths`, `artifact_manifest_path`, and `artifact_workspace_path` fields remain accepted and are cross-checked when present, but are not required for artifact-bound scoring. A `with-skill` repository-fixture run is invalid when its recomputed `changed_paths` is empty; a baseline run may record an empty diff. Keep the artifact root outside Git and do not expose earlier runs to later generation runs.
+The independent grader receives the raw response, pinned fixture, resulting workspace, and manifest. For a greenfield with-skill run, it also receives the captured Initializr response, confirms that the compact response hash and selected/default values agree with those bytes, and records the full `initializr_metadata_sha256`. The scorer derives `<artifact-root>/<skill-commit>/sources/initializr/<initializr_metadata_sha256>.json`, recomputes its hash, and verifies that it is bounded metadata satisfying the same stable semantic contract as the online checker. For artifact-bound scoring, record `artifact_manifest_sha256`; the scorer derives the manifest and workspace paths, verifies their physical identities, checks the expected skill commit and pinned fixture tree, and recomputes the manifest from the preserved workspace. Legacy `workspace_diff_sha256`, `changed_paths`, `artifact_manifest_path`, and `artifact_workspace_path` fields remain accepted and are cross-checked when present, but are not required for artifact-bound scoring. A `with-skill` repository-fixture run is invalid when its recomputed `changed_paths` is empty; a baseline run may record an empty diff. Keep the artifact root outside Git and do not expose earlier runs to later generation runs.
 
 `spring-behavior-artifact/1` attests regular-file paths and byte content. It intentionally does not attest executable bits or other filesystem metadata; do not cite it as evidence for mode-only changes.
 
@@ -71,11 +72,17 @@ Repository-fixture results additionally bind a non-empty workspace change:
 {"case_id":"korean-existing-application-fix","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","artifact_manifest_sha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
 ```
 
-```text
-python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --require-artifact-binding --artifact-root dist/behavior-artifacts --expected-skill-commit <40-character-commit> --json-report dist/behavior-report.json
+The greenfield with-skill result also records the source binding:
+
+```json
+{"case_id":"developer-greenfield-unpinned-version","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","artifact_manifest_sha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","initializr_metadata_sha256":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
 ```
 
-Only `with-skill` runs contribute to the release score; `without-skill` is a separately reported comparison baseline. The release gate requires the canonical rubric suite, at least 95% global and 90% per-skill `must` pass rates, zero failed or unclear `must_not` grades, and no `must` criterion that is non-passing in a majority of repeated runs. `--strict` retains its 1.0-compatible scoring contract; add `--require-artifact-binding`, an artifact root, and the expected commit when the release evidence must be tied to preserved workspaces. The JSON report records the cohort and number of verified artifact runs. Custom case files remain available for non-strict experiments. A grader result is evidence only for the recorded output, host, model, commit, and rubric; it is not a deterministic unit test.
+```text
+python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --require-artifact-binding --require-initializr-source-binding --artifact-root dist/behavior-artifacts --expected-skill-commit <40-character-commit> --json-report dist/behavior-report.json
+```
+
+Only `with-skill` runs contribute to the release score; `without-skill` is a separately reported comparison baseline. The release gate requires the canonical rubric suite, at least 95% global and 90% per-skill `must` pass rates, zero failed or unclear `must_not` grades, and no `must` criterion that is non-passing in a majority of repeated runs. `--strict` retains its 1.0-compatible scoring contract; add `--require-artifact-binding` when evidence must be tied to preserved workspaces and `--require-initializr-source-binding` when greenfield evidence must also be tied to captured metadata. Both binding flags require an artifact root and expected commit. The JSON report records the cohort, verified artifact runs, and verified Initializr source runs. Custom case files remain available for non-strict experiments. A grader result is evidence only for the recorded output, host, model, commit, rubric, and bound source bytes; it is not a deterministic unit test.
 
 `source-publisher-policy.json` is the default-deny registry for URLs in `*sources.md`. Direct publisher/project/standards documentation and explicitly classified supporting authorities are separate lists; GitHub links additionally require an approved project owner.
 

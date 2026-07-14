@@ -4,7 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from unittest import mock
@@ -243,6 +243,71 @@ class ScoreRoutingResultsTests(unittest.TestCase):
             ],
         ), self.assertRaises(SystemExit):
             score_routing_results.parse_args()
+
+    def test_partial_cli_can_fail_on_an_observed_routing_failure(self) -> None:
+        report = {
+            "summary": {
+                "correct": 0,
+                "evaluated": 1,
+                "accuracy": 0.0,
+                "false_activation_rate": 0.0,
+                "missed_activation_rate": 1.0,
+            },
+            "release_gate_failures": ["case or repeated-run coverage is incomplete"],
+            "failures": [
+                {
+                    "case_id": "semantic-review",
+                    "run_id": "run-1",
+                    "expected_skill": "spring-engineering-review",
+                    "selected_skill": None,
+                }
+            ],
+        }
+        with redirect_stderr(StringIO()), redirect_stdout(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_routing_results.py",
+                "results.jsonl",
+                "--allow-partial",
+                "--fail-on-observed-failure",
+            ],
+        ), mock.patch.object(
+            score_routing_results, "load_cases", return_value=self.cases
+        ), mock.patch.object(
+            score_routing_results, "load_results", return_value=[]
+        ), mock.patch.object(
+            score_routing_results, "score_results", return_value=(report, [])
+        ):
+            self.assertEqual(score_routing_results.main(), 1)
+
+        passing_report = {
+            **report,
+            "summary": {
+                **report["summary"],
+                "correct": 1,
+                "accuracy": 1.0,
+                "missed_activation_rate": 0.0,
+            },
+            "failures": [],
+        }
+        with redirect_stderr(StringIO()), redirect_stdout(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_routing_results.py",
+                "results.jsonl",
+                "--allow-partial",
+                "--fail-on-observed-failure",
+            ],
+        ), mock.patch.object(
+            score_routing_results, "load_cases", return_value=self.cases
+        ), mock.patch.object(
+            score_routing_results, "load_results", return_value=[]
+        ), mock.patch.object(
+            score_routing_results, "score_results", return_value=(passing_report, [])
+        ):
+            self.assertEqual(score_routing_results.main(), 0)
 
     def test_strict_release_rejects_custom_case_suite(self) -> None:
         with self.assertRaisesRegex(ValueError, "canonical routing case suite"):
