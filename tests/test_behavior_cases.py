@@ -15,6 +15,11 @@ import validate_behavior_cases  # noqa: E402
 
 
 class BehaviorCaseTests(unittest.TestCase):
+    def test_repository_fixture_text_formats_have_stable_line_endings(self) -> None:
+        attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        for pattern in ("*.java text eol=lf", "*.sql text eol=lf", "*.xml text eol=lf"):
+            self.assertIn(pattern, attributes)
+
     def test_behavior_case_contract_is_valid(self) -> None:
         self.assertEqual(validate_behavior_cases.validate_cases(), [])
 
