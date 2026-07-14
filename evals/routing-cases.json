@@ -1170,6 +1170,7 @@
       "references/implementation-playbook.md"
     ],
     "forbidden_refs": [
+      "references/greenfield-baseline-policy.json",
       "references/official-sources.md"
     ],
     "forbidden_skills": [
@@ -1189,6 +1190,7 @@
       "Spring Boot 4.1"
     ],
     "expected_refs": [
+      "references/greenfield-baseline-policy.json",
       "references/implementation-playbook.md",
       "references/official-sources.md"
     ],
@@ -1213,6 +1215,7 @@
       "references/implementation-playbook.md"
     ],
     "forbidden_refs": [
+      "references/greenfield-baseline-policy.json",
       "references/official-sources.md"
     ],
     "forbidden_skills": [
@@ -1235,7 +1238,9 @@
       "references/implementation-playbook.md",
       "references/official-sources.md"
     ],
-    "forbidden_refs": [],
+    "forbidden_refs": [
+      "references/greenfield-baseline-policy.json"
+    ],
     "forbidden_skills": [
       "spring-upgrade-planner",
       "spring-engineering-review"
@@ -1253,6 +1258,7 @@
       "만들고 테스트"
     ],
     "expected_refs": [
+      "references/greenfield-baseline-policy.json",
       "references/implementation-playbook.md",
       "references/official-sources.md"
     ],

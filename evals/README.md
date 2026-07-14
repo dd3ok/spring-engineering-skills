@@ -2,15 +2,15 @@
 
 `routing-cases.json` checks semantic ownership and reference-routing specification drift. `expected_refs` is the exact allowed reference set at the routing checkpoint encoded by each prompt; every unlisted reference is implicitly forbidden, while `forbidden_refs` records the explicit negative partition for dedicated skills and highlights important review boundaries. Fixed `train` and `validation` splits cover every skill and non-activation cases. Re-evaluate routing when repository or runtime evidence adds a stack signal; the Kafka evidence cases demonstrate this second checkpoint. `review-routing-policy.json` pins the review route union and requires case coverage for every route. These contracts do not test model behavior or actual load traces.
 
-`behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A behavior case passing once is a smoke test, not a statistical quality claim.
+`behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A case definition is not evidence that the skill can perform the behavior, and a behavior case passing once is a smoke test rather than a statistical quality claim.
 
-For `repository-fixture` cases, copy the declared `fixture_path` to a fresh temporary workspace and run the agent there. Preserve both trees for grading, then bind the actual file changes to the result with the standard-library capture tool:
+For `repository-fixture` cases, copy the declared `fixture_path` to a fresh workspace under an artifact root and run the agent there. Use a unique `<case-id>/<condition>/<run-id>/workspace` directory for each result. Preserve the workspace for grading, then capture its changes to a sibling manifest outside the workspace:
 
 ```text
-python scripts/capture_behavior_artifact.py --case-id <case-id> --fixture <fixture-path> --workspace <workspace-path> --output <manifest.json>
+python scripts/capture_behavior_artifact.py --case-id <case-id> --fixture <fixture-path> --workspace <artifact-root>/<case-id>/<condition>/<run-id>/workspace --output <artifact-root>/<case-id>/<condition>/<run-id>/manifest.json
 ```
 
-The independent grader receives the raw response, fixture, resulting workspace, and manifest. Copy `workspace_diff_sha256` and `changed_paths` from the manifest into the result record. A `with-skill` repository-fixture run is invalid when `changed_paths` is empty; a baseline run may record an empty diff. Keep manifests and workspaces outside Git and do not expose them to later generation runs.
+The independent grader receives the raw response, fixture, resulting workspace, and manifest. Copy `workspace_diff_sha256` and `changed_paths` from the manifest into the result record, then add the manifest SHA-256 and artifact-root-relative manifest and workspace paths. A `with-skill` repository-fixture run is invalid when `changed_paths` is empty; a baseline run may record an empty diff. Keep the artifact root outside Git and do not expose earlier runs to later generation runs. Strict scoring reads the manifest, verifies its file hash, and recomputes it from the canonical fixture and preserved workspace; partial non-release scoring may still use the legacy manual fields without an artifact root.
 
 The behavior suite includes Korean prompts for evidence restraint, threat modeling, upgrade ambiguity, and bounded implementation. A Korean prompt declares `response_language: ko` and includes a Korean-response rubric item. Keep at least two such cases so localized output behavior does not silently fall out of the contract.
 
@@ -52,11 +52,11 @@ For output evaluation, run each `behavior-cases.json` prompt without exposing it
 Repository-fixture results additionally bind a non-empty workspace change:
 
 ```json
-{"case_id":"korean-existing-application-fix","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","workspace_diff_sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","changed_paths":["src/main/java/com/example/orders/OrderBatchService.java","src/test/java/com/example/orders/OrderBatchServiceTest.java"],"grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
+{"case_id":"korean-existing-application-fix","run_id":"with-1","condition":"with-skill","host":"codex","host_version":"record-version","model":"record-model","skill_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","trace_id":"unique-generation-trace","output_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","workspace_diff_sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","changed_paths":["src/main/java/com/example/orders/OrderBatchService.java","src/test/java/com/example/orders/OrderBatchServiceTest.java"],"artifact_manifest_path":"korean-existing-application-fix/with-skill/with-1/manifest.json","artifact_manifest_sha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","artifact_workspace_path":"korean-existing-application-fix/with-skill/with-1/workspace","grader_kind":"independent-model","must_results":["pass"],"must_not_results":["pass"]}
 ```
 
 ```text
-python scripts/score_behavior_results.py dist/behavior-results.jsonl --strict --json-report dist/behavior-report.json
+python scripts/score_behavior_results.py dist/behavior-results.jsonl --artifact-root dist/behavior-artifacts --strict --json-report dist/behavior-report.json
 ```
 
 Only `with-skill` runs contribute to the release score; `without-skill` is a separately reported comparison baseline. The release gate requires the canonical rubric suite, at least 95% global and 90% per-skill `must` pass rates, zero failed or unclear `must_not` grades, and no `must` criterion that is non-passing in a majority of repeated runs. Custom case files remain available for non-strict experiments. A grader result is evidence only for the recorded output, host, model, commit, and rubric; it is not a deterministic unit test.

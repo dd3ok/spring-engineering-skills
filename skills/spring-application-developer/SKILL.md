@@ -9,7 +9,7 @@ Deliver the smallest coherent Spring application change that satisfies the reque
 
 ## Load Order
 
-Load `references/implementation-playbook.md` for every implementation. Load `references/official-sources.md` before selecting a Spring, Java, Kotlin, Maven, or Gradle version or making a version-sensitive framework claim.
+Load `references/implementation-playbook.md` for every implementation. For greenfield work, also load `references/greenfield-baseline-policy.json`. Load `references/official-sources.md` before selecting a Spring, Java, Kotlin, Maven, or Gradle version or making a version-sensitive framework claim.
 
 ## Ownership Gate
 

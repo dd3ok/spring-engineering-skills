@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -103,6 +104,25 @@ class CaptureBehaviorArtifactTests(unittest.TestCase):
                 self.skipTest(f"symbolic links are unavailable: {error}")
             with self.assertRaisesRegex(ValueError, "linked path"):
                 capture_behavior_artifact.build_manifest("linked-case", fixture, workspace)
+
+    def test_directory_walk_error_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            def fail_walk(*args, **kwargs):
+                kwargs["onerror"](PermissionError("unreadable directory"))
+                return iter(())
+
+            with mock.patch.object(
+                capture_behavior_artifact.os,
+                "walk",
+                side_effect=fail_walk,
+            ) as walk:
+                with self.assertRaisesRegex(ValueError, "could not be inspected"):
+                    capture_behavior_artifact.tree_files(root)
+
+            self.assertTrue(walk.call_args.kwargs["topdown"])
+            self.assertFalse(walk.call_args.kwargs["followlinks"])
 
 
 if __name__ == "__main__":

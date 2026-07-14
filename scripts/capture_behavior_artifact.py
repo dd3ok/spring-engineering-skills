@@ -17,6 +17,10 @@ MAX_TOTAL_BYTES = 64 * 1024 * 1024
 CHUNK_BYTES = 1024 * 1024
 
 
+def raise_walk_error(error: OSError) -> None:
+    raise error
+
+
 def file_digest(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -35,7 +39,12 @@ def tree_files(root: Path) -> dict[str, str]:
     files: dict[str, str] = {}
     total_bytes = 0
     try:
-        for current, directories, filenames in os.walk(resolved_root, followlinks=False):
+        for current, directories, filenames in os.walk(
+            resolved_root,
+            topdown=True,
+            onerror=raise_walk_error,
+            followlinks=False,
+        ):
             current_path = Path(current)
             relative_directory = current_path.relative_to(resolved_root)
             directories.sort()

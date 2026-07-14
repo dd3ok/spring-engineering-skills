@@ -1,0 +1,23 @@
+{
+  "schema_version": "spring-greenfield-baseline-policy/1",
+  "spring_boot": {
+    "selection": "initializr-default-stable-ga"
+  },
+  "java": {
+    "selection": "user-choice-or-initializr-default",
+    "do_not_infer_vendor_lts": true
+  },
+  "build_tool": {
+    "selection": "user-choice-or-initializr-default-project-type",
+    "wrapper_version": "generated-project"
+  },
+  "provenance_required": [
+    "retrieved_at_utc",
+    "metadata_sha256",
+    "spring_boot_version",
+    "java_version",
+    "build_tool",
+    "wrapper_version",
+    "user_selected_fields"
+  ]
+}

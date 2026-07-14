@@ -1,6 +1,6 @@
 # Spring Application Development Official Sources
 
-Checked on: 2026-07-13. Use these pages for discovery, then cite the exact versioned reference or release note that supports a version-sensitive implementation choice.
+Checked on: 2026-07-14. Use these pages for discovery, then cite the exact versioned reference or release note that supports a version-sensitive implementation choice.
 
 - Spring Initializr: https://start.spring.io/
 - Spring Initializr metadata: https://start.spring.io/metadata/client
@@ -17,3 +17,11 @@ Checked on: 2026-07-13. Use these pages for discovery, then cite the exact versi
 - Spring Framework transaction management: https://docs.spring.io/spring-framework/reference/data-access/transaction.html
 - Spring Framework MVC Problem Details: https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html
 - Spring Security reference: https://docs.spring.io/spring-security/reference/
+- Spring Data JPA reference: https://docs.spring.io/spring-data/jpa/reference/
+- Spring Data JDBC reference: https://docs.spring.io/spring-data/relational/reference/jdbc.html
+- PostgreSQL current documentation: https://www.postgresql.org/docs/current/
+- pgJDBC documentation: https://jdbc.postgresql.org/documentation/
+- Flyway reference: https://documentation.red-gate.com/flyway/reference
+- Testcontainers PostgreSQL module: https://java.testcontainers.org/modules/databases/postgres/
+- Maven Wrapper: https://maven.apache.org/tools/wrapper/
+- Gradle Wrapper: https://docs.gradle.org/current/userguide/gradle_wrapper.html
