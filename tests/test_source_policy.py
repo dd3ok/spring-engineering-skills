@@ -148,7 +148,7 @@ class SourcePolicyTests(unittest.TestCase):
             for match in validate_source_policy.URL_PATTERN.finditer(path.read_text(encoding="utf-8"))
         }
         self.assertEqual(
-            validate_source_policy.validate_source_review_register(ROOT, date(2026, 7, 13), source_urls),
+            validate_source_policy.validate_source_review_register(ROOT, date(2026, 7, 14), source_urls),
             [],
         )
 

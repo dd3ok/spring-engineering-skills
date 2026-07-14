@@ -4,6 +4,20 @@
 
 `behavior-cases.json` contains raw prompts plus a parent-side rubric. For a forward test, give a fresh agent only the named skill directory and `prompt`; do not expose `must` or `must_not`. Score the returned answer afterward for evidence restraint, non-overlap, and unsafe-action avoidance. A case definition is not evidence that the skill can perform the behavior, and a behavior case passing once is a smoke test rather than a statistical quality claim.
 
+Use three evaluation tiers so routine validation stays cheap. Source-register, line-ending, and checker-only changes need only deterministic CI. A routing, prompt, rubric, or user-visible behavior change should run a sampled smoke: include every changed case, at least one positive case for each touched skill, two non-activation cases, and one compound handoff, normally 12-15 routing observations at one run each. Score those observations against the canonical case file without calling the result a release gate:
+
+```text
+python scripts/score_routing_results.py dist/routing-smoke-results.jsonl --allow-partial --expected-runs 1 --require-trace --json-report dist/routing-smoke-report.json
+```
+
+For implementation behavior changes, use the two repository-fixture cases (`korean-existing-application-fix` and `developer-greenfield-unpinned-version`) with three with-skill runs and one baseline each, for eight artifact-bound results total:
+
+```text
+python scripts/score_behavior_results.py dist/behavior-smoke-results.jsonl --allow-partial --require-artifact-binding --artifact-root dist/behavior-smoke-artifacts --expected-skill-commit <40-character-commit> --json-report dist/behavior-smoke-report.json
+```
+
+Run the complete repeated `--strict` suites documented below only for a frozen release candidate. Partial reports intentionally list the unexecuted canonical cases as incomplete and must never be represented as release evidence.
+
 For `repository-fixture` cases, first verify that the declared `fixture_tree_sha256` matches the fixture. Copy it to a fresh workspace under an artifact root and run the agent there. Use a canonical lowercase, hyphenated `run-id` and a unique `<skill-commit>/<case-id>/<condition>/<run-id>/workspace` directory for each result. Preserve the workspace for grading, then capture its changes to a sibling manifest outside the workspace:
 
 ```text

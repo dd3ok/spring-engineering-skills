@@ -50,5 +50,21 @@
     "wrapper_version_when_available",
     "generation_parameters",
     "user_selected_fields"
-  ]
+  ],
+  "user_summary_required": [
+    "spring_boot_version",
+    "java_version",
+    "project_type",
+    "build_tool",
+    "retrieved_at_utc",
+    "metadata_source",
+    "metadata_sha256"
+  ],
+  "user_summary_rules": {
+    "selected_vs_default": "identify-user-selected-and-defaulted-fields",
+    "metadata_sha256": "render-a-short-prefix",
+    "wrapper": "include-only-when-unavailable-or-version-relevant",
+    "full_provenance": "keep-for-the-current-run-and-persist-only-in-an-evaluation-trace-or-user-requested-artifact",
+    "saved_artifact": "never-create-without-an-explicit-user-request"
+  }
 }

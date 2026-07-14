@@ -84,8 +84,9 @@ class ApplicationDeveloperTests(unittest.TestCase):
         self.assertIn("incidental to a requested greenfield implementation", planner["description"])
         self.assertIn("Apply `references/greenfield-baseline-policy.json`", self.playbook)
         self.assertIn("spring-initializr-defaults/1", self.playbook)
-        self.assertIn("metadata default only when it is GA", self.playbook)
-        self.assertIn("save a metadata snapshot only when the user requests", self.playbook)
+        self.assertIn("sole selection algorithm", self.playbook)
+        self.assertIn("compact user summary by default", self.playbook)
+        self.assertIn("save a metadata snapshot or provenance artifact only when", self.playbook)
         self.assertIn("Do not infer a vendor LTS policy", self.playbook)
         sources = (
             self.root / "references" / "official-sources.md"
@@ -114,6 +115,11 @@ class ApplicationDeveloperTests(unittest.TestCase):
         )
         self.assertIn("metadata_sha256", policy["provenance_required"])
         self.assertIn("generation_parameters", policy["provenance_required"])
+        self.assertLess(set(policy["user_summary_required"]), set(policy["provenance_required"]))
+        self.assertEqual(
+            policy["user_summary_rules"]["saved_artifact"],
+            "never-create-without-an-explicit-user-request",
+        )
         self.assertEqual(
             policy["metadata"]["saved_snapshot"],
             "only-when-user-requests-a-saved-artifact",
@@ -139,6 +145,7 @@ class ApplicationDeveloperTests(unittest.TestCase):
         self.assertEqual(case["artifact_mode"], "repository-fixture")
         self.assertTrue(any("continue implementation" in item for item in case["must"]))
         self.assertTrue(any("Initializr metadata algorithm" in item for item in case["must"]))
+        self.assertTrue(any("compact user summary" in item for item in case["must"]))
         self.assertTrue(any("metadata hash" in item for item in case["must"]))
         self.assertIn(
             "Stop solely because the prompt does not pin an exact version",
