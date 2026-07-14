@@ -1,23 +1,54 @@
 {
   "schema_version": "spring-greenfield-baseline-policy/1",
+  "metadata": {
+    "source": "https://start.spring.io/metadata/client",
+    "accept": "application/vnd.initializr.v2.3+json",
+    "response_bytes": "hash-before-parsing",
+    "saved_snapshot": "only-when-user-requests-a-saved-artifact",
+    "selection_algorithm": "spring-initializr-defaults/1"
+  },
   "spring_boot": {
-    "selection": "initializr-default-stable-ga"
+    "ga_rule": "qualifier-absent-or-RELEASE; reject-M-RC-SNAPSHOT",
+    "version_order": "numeric-major-minor-patch-descending; RELEASE-equals-no-qualifier",
+    "omitted": "use-default-when-ga-otherwise-highest-ga-or-block-if-none",
+    "version_line": "highest-ga-matching-user-line-or-block-if-none",
+    "exact": "verify-present-and-supported; require-explicit-authorization-for-prerelease"
   },
-  "java": {
-    "selection": "user-choice-or-initializr-default",
-    "do_not_infer_vendor_lts": true
+  "metadata_backed_fields": {
+    "java_version": "user-choice-or-metadata-default",
+    "project_type": "user-choice-or-metadata-default-project-format",
+    "build_tool": "selected-project-type-tags.build",
+    "language": "user-choice-or-metadata-default",
+    "packaging": "user-choice-or-metadata-default",
+    "configuration_file_format": "user-choice-or-metadata-default"
   },
-  "build_tool": {
-    "selection": "user-choice-or-initializr-default-project-type",
-    "wrapper_version": "generated-project"
+  "constraints": {
+    "do_not_infer_vendor_lts": true,
+    "selected_value_must_exist_in_metadata": true,
+    "project_type_must_have_project_format": true
+  },
+  "wrapper": {
+    "selection": "preserve-existing-or-use-generated-project-wrapper",
+    "when_absent": "record-not-generated-or-unavailable",
+    "do_not_fabricate_version": true
   },
   "provenance_required": [
     "retrieved_at_utc",
+    "metadata_source",
+    "metadata_accept",
+    "metadata_content_type",
     "metadata_sha256",
+    "selection_algorithm",
     "spring_boot_version",
     "java_version",
+    "project_type",
     "build_tool",
-    "wrapper_version",
+    "language",
+    "packaging",
+    "configuration_file_format",
+    "wrapper_status",
+    "wrapper_version_when_available",
+    "generation_parameters",
     "user_selected_fields"
   ]
 }

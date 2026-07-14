@@ -4,6 +4,8 @@ Checked on: 2026-07-14. Use these pages for discovery, then cite the exact versi
 
 - Spring Initializr: https://start.spring.io/
 - Spring Initializr metadata: https://start.spring.io/metadata/client
+- Spring Initializr metadata format and defaults: https://docs.spring.io/initializr/docs/current/reference/html/
+- Spring Initializr metadata controller media types: https://docs.spring.io/initializr/docs/current/api/io/spring/initializr/web/controller/ProjectMetadataController.html
 - Spring Boot project page: https://spring.io/projects/spring-boot/
 - Spring Boot system requirements: https://docs.spring.io/spring-boot/system-requirements.html
 - Spring Boot reference: https://docs.spring.io/spring-boot/reference/

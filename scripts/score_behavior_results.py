@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path
 
-from capture_behavior_artifact import build_manifest
+from capture_behavior_artifact import CASE_ID, build_manifest
 from skill_utils import ROOT, is_link_or_junction
 
 
@@ -16,11 +16,17 @@ MAX_RESULTS_BYTES = 8 * 1024 * 1024
 MAX_ARTIFACT_MANIFEST_BYTES = 2 * 1024 * 1024
 SHA256 = re.compile(r"^[a-f0-9]{64}$")
 COMMIT = re.compile(r"^[a-f0-9]{40}$")
-ARTIFACT_FIELDS = {
+RUN_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+WINDOWS_RESERVED_NAMES = {
+    "aux", "con", "nul", "prn",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
+ARTIFACT_PATH_FIELDS = {
     "artifact_manifest_path",
-    "artifact_manifest_sha256",
     "artifact_workspace_path",
 }
+ARTIFACT_FIELDS = {"artifact_manifest_sha256", *ARTIFACT_PATH_FIELDS}
 RESULT_FIELDS = {
     "case_id", "run_id", "condition", "host", "host_version", "model", "skill_commit",
     "trace_id", "output_sha256", "grader_kind", "must_results", "must_not_results", "notes",
@@ -53,6 +59,13 @@ def load_cases(path: Path = DEFAULT_CASES) -> dict[str, dict[str, object]]:
                 or not all(isinstance(value, str) and value for value in values)
             ):
                 raise ValueError(f"behavior case {index} has invalid {field}")
+        if item.get("artifact_mode") == "repository-fixture" and (
+            not isinstance(item.get("fixture_tree_sha256"), str)
+            or SHA256.fullmatch(str(item["fixture_tree_sha256"])) is None
+        ):
+            raise ValueError(
+                f"behavior case {item['id']} has an invalid fixture_tree_sha256"
+            )
         cases[str(item["id"])] = item
     return cases
 
@@ -114,9 +127,15 @@ def load_results(path: Path) -> list[dict[str, object]]:
             value = item.get(field)
             if value is not None and not portable_relative_path(value):
                 raise ValueError(f"behavior result line {line_number} has invalid {field}")
-        artifact_values = [item.get(field) for field in ARTIFACT_FIELDS]
-        if any(value is not None for value in artifact_values) and not all(
-            value is not None for value in artifact_values
+        artifact_path_values = [item.get(field) for field in ARTIFACT_PATH_FIELDS]
+        if any(value is not None for value in artifact_path_values) and not all(
+            value is not None for value in artifact_path_values
+        ):
+            raise ValueError(
+                f"behavior result line {line_number} has incomplete artifact paths"
+            )
+        if any(value is not None for value in artifact_path_values) and (
+            artifact_manifest_sha256 is None
         ):
             raise ValueError(
                 f"behavior result line {line_number} has incomplete artifact binding"
@@ -152,8 +171,13 @@ def portable_relative_path(value: object) -> bool:
     )
 
 
-def portable_path_segment(value: object) -> bool:
-    return portable_relative_path(value) and len(Path(str(value)).parts) == 1
+def canonical_run_id(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) <= 64
+        and RUN_ID.fullmatch(value) is not None
+        and value not in WINDOWS_RESERVED_NAMES
+    )
 
 
 def resolve_bounded_path(
@@ -185,71 +209,96 @@ def resolve_bounded_path(
     return resolved
 
 
-def artifact_binding_error(
+def artifact_binding(
     case_id: str,
     case: dict[str, object],
     item: dict[str, object],
     artifact_root: Path,
     fixture_root: Path,
-) -> str | None:
-    label = f"{case_id}/{item['condition']}/{item['run_id']}"
+    expected_skill_commit: str | None,
+) -> tuple[dict[str, object], Path, Path]:
+    condition = str(item["condition"])
+    run_id = str(item["run_id"])
+    if CASE_ID.fullmatch(case_id) is None:
+        raise ValueError("case_id must be a canonical lowercase path segment")
+    if not canonical_run_id(run_id):
+        raise ValueError(
+            "run_id must be a canonical lowercase hyphenated identifier"
+        )
+    path_parts = [case_id, condition, run_id]
+    if expected_skill_commit is not None:
+        path_parts.insert(0, expected_skill_commit)
+    run_root = "/".join(path_parts)
+    expected_manifest_path = f"{run_root}/manifest.json"
+    expected_workspace_path = f"{run_root}/workspace"
+    supplied_manifest_path = item.get("artifact_manifest_path")
+    supplied_workspace_path = item.get("artifact_workspace_path")
+    if (
+        supplied_manifest_path is not None
+        and supplied_manifest_path != expected_manifest_path
+    ):
+        raise ValueError("artifact manifest path does not identify this result run")
+    if (
+        supplied_workspace_path is not None
+        and supplied_workspace_path != expected_workspace_path
+    ):
+        raise ValueError("artifact workspace path does not identify this result run")
+    manifest_path = resolve_bounded_path(
+        artifact_root,
+        expected_manifest_path,
+        expect_directory=False,
+        label="artifact manifest path",
+    )
+    workspace_path = resolve_bounded_path(
+        artifact_root,
+        expected_workspace_path,
+        expect_directory=True,
+        label="artifact workspace path",
+    )
     try:
-        condition = str(item["condition"])
-        run_id = str(item["run_id"])
-        if not portable_path_segment(case_id) or not portable_path_segment(run_id):
-            raise ValueError("case_id and run_id must be portable path segments")
-        run_root = f"{case_id}/{condition}/{run_id}"
-        expected_manifest_path = f"{run_root}/manifest.json"
-        expected_workspace_path = f"{run_root}/workspace"
-        if item["artifact_manifest_path"] != expected_manifest_path:
-            raise ValueError("artifact manifest path does not identify this result run")
-        if item["artifact_workspace_path"] != expected_workspace_path:
-            raise ValueError("artifact workspace path does not identify this result run")
-        manifest_path = resolve_bounded_path(
-            artifact_root,
-            str(item["artifact_manifest_path"]),
-            expect_directory=False,
-            label="artifact manifest path",
+        manifest_path.relative_to(workspace_path)
+    except ValueError:
+        pass
+    else:
+        raise ValueError("artifact manifest must be outside the workspace")
+    fixture_path = case.get("fixture_path")
+    fixture_tree_sha256 = case.get("fixture_tree_sha256")
+    if not isinstance(fixture_path, str):
+        raise ValueError("repository-fixture case lacks fixture_path")
+    if (
+        not isinstance(fixture_tree_sha256, str)
+        or SHA256.fullmatch(fixture_tree_sha256) is None
+    ):
+        raise ValueError("repository-fixture case lacks fixture_tree_sha256")
+    fixture = resolve_bounded_path(
+        fixture_root,
+        fixture_path,
+        expect_directory=True,
+        label="fixture path",
+    )
+    if manifest_path.stat().st_size > MAX_ARTIFACT_MANIFEST_BYTES:
+        raise ValueError(
+            f"artifact manifest exceeds {MAX_ARTIFACT_MANIFEST_BYTES} bytes"
         )
-        workspace_path = resolve_bounded_path(
-            artifact_root,
-            str(item["artifact_workspace_path"]),
-            expect_directory=True,
-            label="artifact workspace path",
-        )
-        try:
-            manifest_path.relative_to(workspace_path)
-        except ValueError:
-            pass
-        else:
-            raise ValueError("artifact manifest must be outside the workspace")
-        fixture_path = case.get("fixture_path")
-        if not isinstance(fixture_path, str):
-            raise ValueError("repository-fixture case lacks fixture_path")
-        fixture = resolve_bounded_path(
-            fixture_root,
-            fixture_path,
-            expect_directory=True,
-            label="fixture path",
-        )
-        if manifest_path.stat().st_size > MAX_ARTIFACT_MANIFEST_BYTES:
-            raise ValueError(
-                f"artifact manifest exceeds {MAX_ARTIFACT_MANIFEST_BYTES} bytes"
-            )
-        payload = manifest_path.read_bytes()
-        if hashlib.sha256(payload).hexdigest() != item["artifact_manifest_sha256"]:
-            raise ValueError("artifact manifest SHA-256 does not match")
-        manifest = json.loads(payload.decode("utf-8"))
-        expected = build_manifest(case_id, fixture, workspace_path)
-        if manifest != expected:
-            raise ValueError("artifact manifest does not match the preserved workspace")
-        if item["workspace_diff_sha256"] != expected["workspace_diff_sha256"]:
-            raise ValueError("workspace_diff_sha256 does not match the artifact manifest")
-        if item["changed_paths"] != expected["changed_paths"]:
-            raise ValueError("changed_paths do not match the artifact manifest")
-    except (OSError, UnicodeError, ValueError, json.JSONDecodeError, KeyError) as error:
-        return f"invalid repository artifact binding: {label}: {error}"
-    return None
+    payload = manifest_path.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != item["artifact_manifest_sha256"]:
+        raise ValueError("artifact manifest SHA-256 does not match")
+    manifest = json.loads(payload.decode("utf-8"))
+    expected = build_manifest(case_id, fixture, workspace_path)
+    if expected["fixture_tree_sha256"] != fixture_tree_sha256:
+        raise ValueError("fixture content does not match the pinned fixture tree")
+    if manifest != expected:
+        raise ValueError("artifact manifest does not match the preserved workspace")
+    workspace_diff_sha256 = item.get("workspace_diff_sha256")
+    if (
+        workspace_diff_sha256 is not None
+        and workspace_diff_sha256 != expected["workspace_diff_sha256"]
+    ):
+        raise ValueError("workspace_diff_sha256 does not match the artifact manifest")
+    changed_paths = item.get("changed_paths")
+    if changed_paths is not None and changed_paths != expected["changed_paths"]:
+        raise ValueError("changed_paths do not match the artifact manifest")
+    return expected, manifest_path, workspace_path
 
 
 def require_canonical_cases(
@@ -269,9 +318,16 @@ def score_results(
     artifact_root: Path | None = None,
     fixture_root: Path = ROOT,
     require_artifact_binding: bool = False,
+    expected_skill_commit: str | None = None,
 ) -> tuple[dict[str, object], list[str]]:
     if expected_with_skill_runs < 1 or expected_without_skill_runs < 0:
         raise ValueError("expected behavior run counts are invalid")
+    if expected_skill_commit is not None and COMMIT.fullmatch(expected_skill_commit) is None:
+        raise ValueError("expected_skill_commit must be a lowercase 40-character commit")
+    if require_artifact_binding and artifact_root is None:
+        raise ValueError("artifact binding requires artifact_root")
+    if require_artifact_binding and expected_skill_commit is None:
+        raise ValueError("artifact binding requires expected_skill_commit")
     errors: list[str] = []
     seen: set[tuple[str, str, str]] = set()
     trace_ids: set[str] = set()
@@ -283,7 +339,8 @@ def score_results(
     by_skill: dict[str, dict[str, int]] = {}
     failures: list[dict[str, object]] = []
     criterion_results: dict[tuple[str, int], list[str]] = {}
-    artifact_paths: set[tuple[str, str]] = set()
+    artifact_identities: list[tuple[Path, Path]] = []
+    verified_artifact_runs = 0
     for item in results:
         case_id = str(item["case_id"])
         condition = str(item["condition"])
@@ -304,6 +361,11 @@ def score_results(
             str(item["model"]),
             str(item["skill_commit"]),
         )
+        if expected_skill_commit is not None and item_cohort[3] != expected_skill_commit:
+            errors.append(
+                f"unexpected behavior skill_commit: {case_id}/{condition}/{run_id}"
+            )
+            continue
         if cohort is None:
             cohort = item_cohort
         elif item_cohort != cohort:
@@ -315,17 +377,21 @@ def score_results(
             continue
         workspace_diff_sha256 = item.get("workspace_diff_sha256")
         changed_paths = item.get("changed_paths")
-        artifact_values = [item.get(field) for field in ARTIFACT_FIELDS]
+        artifact_manifest_sha256 = item.get("artifact_manifest_sha256")
+        artifact_path_values = [item.get(field) for field in ARTIFACT_PATH_FIELDS]
         if case.get("artifact_mode") == "repository-fixture":
-            if not isinstance(workspace_diff_sha256, str) or not isinstance(changed_paths, list):
+            has_artifact_binding = artifact_manifest_sha256 is not None
+            if any(value is not None for value in artifact_path_values) and not all(
+                value is not None for value in artifact_path_values
+            ):
                 errors.append(
-                    f"repository-fixture result lacks workspace evidence: "
+                    f"repository-fixture result has incomplete artifact paths: "
                     f"{case_id}/{condition}/{run_id}"
                 )
                 continue
-            has_any_artifact_binding = any(value is not None for value in artifact_values)
-            has_artifact_binding = all(value is not None for value in artifact_values)
-            if has_any_artifact_binding and not has_artifact_binding:
+            if any(value is not None for value in artifact_path_values) and not (
+                has_artifact_binding
+            ):
                 errors.append(
                     f"repository-fixture result has incomplete artifact binding: "
                     f"{case_id}/{condition}/{run_id}"
@@ -344,27 +410,47 @@ def score_results(
                         f"{case_id}/{condition}/{run_id}"
                     )
                     continue
-                artifact_key = (
-                    str(item["artifact_manifest_path"]),
-                    str(item["artifact_workspace_path"]),
-                )
-                if artifact_key in artifact_paths:
+                label = f"{case_id}/{condition}/{run_id}"
+                try:
+                    expected, manifest_path, workspace_path = artifact_binding(
+                        case_id,
+                        case,
+                        item,
+                        artifact_root,
+                        fixture_root,
+                        expected_skill_commit,
+                    )
+                    duplicate_identity = any(
+                        manifest_path.samefile(used_manifest)
+                        or workspace_path.samefile(used_workspace)
+                        for used_manifest, used_workspace in artifact_identities
+                    )
+                except (
+                    OSError,
+                    UnicodeError,
+                    ValueError,
+                    json.JSONDecodeError,
+                    KeyError,
+                ) as error:
                     errors.append(
-                        f"duplicate repository artifact binding: "
-                        f"{case_id}/{condition}/{run_id}"
+                        f"invalid repository artifact binding: {label}: {error}"
                     )
                     continue
-                artifact_paths.add(artifact_key)
-                binding_error = artifact_binding_error(
-                    case_id,
-                    case,
-                    item,
-                    artifact_root,
-                    fixture_root,
-                )
-                if binding_error is not None:
-                    errors.append(binding_error)
+                if duplicate_identity:
+                    errors.append(f"duplicate repository artifact binding: {label}")
                     continue
+                artifact_identities.append((manifest_path, workspace_path))
+                verified_artifact_runs += 1
+                workspace_diff_sha256 = expected["workspace_diff_sha256"]
+                changed_paths = expected["changed_paths"]
+            elif not isinstance(workspace_diff_sha256, str) or not isinstance(
+                changed_paths, list
+            ):
+                errors.append(
+                    f"repository-fixture result lacks workspace evidence: "
+                    f"{case_id}/{condition}/{run_id}"
+                )
+                continue
             if condition == "with-skill" and (
                 not changed_paths or workspace_diff_sha256 == EMPTY_WORKSPACE_DIFF_SHA256
             ):
@@ -376,7 +462,8 @@ def score_results(
         elif (
             workspace_diff_sha256 is not None
             or changed_paths is not None
-            or any(value is not None for value in artifact_values)
+            or artifact_manifest_sha256 is not None
+            or any(value is not None for value in artifact_path_values)
         ):
             errors.append(
                 f"non-fixture result contains workspace evidence: {case_id}/{condition}/{run_id}"
@@ -449,6 +536,21 @@ def score_results(
 
     report = {
         "schema_version": "spring-behavior-eval/1",
+        "cohort": (
+            {
+                "host": cohort[0],
+                "host_version": cohort[1],
+                "model": cohort[2],
+                "skill_commit": cohort[3],
+            }
+            if cohort is not None
+            else None
+        ),
+        "artifact_binding": {
+            "required": require_artifact_binding,
+            "verified_runs": verified_artifact_runs,
+            "expected_skill_commit": expected_skill_commit,
+        },
         "summary": {
             "must_total": must_total,
             "must_pass": must_pass,
@@ -519,14 +621,22 @@ def main() -> int:
     parser.add_argument("--allow-partial", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--artifact-root", type=Path)
+    parser.add_argument("--require-artifact-binding", action="store_true")
+    parser.add_argument("--expected-skill-commit")
     parser.add_argument("--json-report", type=Path)
     args = parser.parse_args()
     if args.strict and args.allow_partial:
         parser.error("--strict cannot be combined with --allow-partial")
     if args.strict and (args.with_skill_runs < 3 or args.without_skill_runs < 1):
         parser.error("--strict requires at least three with-skill runs and one baseline run")
-    if args.strict and args.artifact_root is None:
-        parser.error("--strict requires --artifact-root for repository-fixture evidence")
+    if args.require_artifact_binding and args.artifact_root is None:
+        parser.error("--require-artifact-binding requires --artifact-root")
+    if args.require_artifact_binding and args.expected_skill_commit is None:
+        parser.error("--require-artifact-binding requires --expected-skill-commit")
+    if args.expected_skill_commit is not None and (
+        COMMIT.fullmatch(args.expected_skill_commit) is None
+    ):
+        parser.error("--expected-skill-commit must be a lowercase 40-character commit")
     try:
         cases = load_cases(args.cases)
         if args.strict:
@@ -538,7 +648,8 @@ def main() -> int:
             expected_without_skill_runs=args.without_skill_runs,
             require_complete=not args.allow_partial,
             artifact_root=args.artifact_root,
-            require_artifact_binding=args.strict,
+            require_artifact_binding=args.require_artifact_binding,
+            expected_skill_commit=args.expected_skill_commit,
         )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         print(f"ERROR: {error}", file=sys.stderr)

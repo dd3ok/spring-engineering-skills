@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from unittest import mock
@@ -57,6 +58,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         artifact_root = root / "artifacts"
         run_root = (
             artifact_root
+            / str(record["skill_commit"])
             / str(record["case_id"])
             / str(record["condition"])
             / str(record["run_id"])
@@ -83,6 +85,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 **self.cases["case"],
                 "artifact_mode": "repository-fixture",
                 "fixture_path": "case",
+                "fixture_tree_sha256": manifest["fixture_tree_sha256"],
             }
         }
         return cases, artifact_root, fixture_root, workspace
@@ -242,8 +245,145 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 artifact_root=artifact_root,
                 fixture_root=fixture_root,
                 require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
             )
         self.assertEqual(errors, [])
+
+    def test_artifact_binding_derives_legacy_workspace_fields_and_reports_cohort(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, _ = self.bind_repository_artifact(
+                root, record
+            )
+            for field in (
+                "workspace_diff_sha256",
+                "changed_paths",
+                "artifact_manifest_path",
+                "artifact_workspace_path",
+            ):
+                record.pop(field)
+            report, errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                expected_with_skill_runs=1,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertEqual(errors, [])
+        self.assertEqual(report["artifact_binding"]["verified_runs"], 1)
+        self.assertEqual(report["cohort"]["skill_commit"], "a" * 40)
+
+    def test_artifact_binding_rejects_a_mutated_fixture_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, workspace = self.bind_repository_artifact(
+                root, record
+            )
+            (fixture_root / "case" / "original.txt").write_text(
+                "mutated", encoding="utf-8"
+            )
+            (workspace / "original.txt").write_text("mutated", encoding="utf-8")
+            _, errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                expected_with_skill_runs=1,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertTrue(any("pinned fixture tree" in error for error in errors))
+
+    def test_artifact_binding_rejects_an_unexpected_skill_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, _ = self.bind_repository_artifact(
+                root, record
+            )
+            _, errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                expected_with_skill_runs=1,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                expected_skill_commit="f" * 40,
+            )
+        self.assertTrue(any("unexpected behavior skill_commit" in error for error in errors))
+
+    def test_artifact_binding_rejects_duplicate_physical_manifest_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, workspace = self.bind_repository_artifact(
+                root, record
+            )
+            second_run_root = workspace.parent.with_name("with-2")
+            second_workspace = second_run_root / "workspace"
+            shutil.copytree(workspace, second_workspace)
+            first_manifest = artifact_root / str(record["artifact_manifest_path"])
+            second_manifest = second_run_root / "manifest.json"
+            try:
+                os.link(first_manifest, second_manifest)
+            except OSError as error:
+                self.skipTest(f"hard links are unavailable: {error}")
+            duplicate = record.copy()
+            duplicate.update(
+                {
+                    "run_id": "with-2",
+                    "trace_id": "trace-with-skill-with-2",
+                    "artifact_manifest_path": second_manifest.relative_to(
+                        artifact_root
+                    ).as_posix(),
+                    "artifact_workspace_path": second_workspace.relative_to(
+                        artifact_root
+                    ).as_posix(),
+                }
+            )
+            _, errors = score_behavior_results.score_results(
+                cases,
+                [record, duplicate],
+                expected_with_skill_runs=2,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertTrue(any("duplicate repository artifact" in error for error in errors))
+
+    @unittest.skipUnless(os.name == "nt", "Windows case-insensitive artifact alias")
+    def test_windows_case_alias_cannot_count_one_artifact_twice(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = self.result("with-1", "with-skill")
+            cases, artifact_root, fixture_root, workspace = self.bind_repository_artifact(
+                root, record
+            )
+            alias_workspace = workspace.parent.with_name("WITH-1") / "workspace"
+            self.assertTrue(workspace.samefile(alias_workspace))
+            alias = record.copy()
+            alias["run_id"] = "WITH-1"
+            alias["trace_id"] = "trace-with-skill-WITH-1"
+            _, errors = score_behavior_results.score_results(
+                cases,
+                [record, alias],
+                expected_with_skill_runs=2,
+                expected_without_skill_runs=0,
+                artifact_root=artifact_root,
+                fixture_root=fixture_root,
+                require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
+            )
+        self.assertTrue(any("canonical lowercase" in error for error in errors))
 
     def test_strict_repository_artifact_binding_rejects_tampering(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -261,6 +401,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 artifact_root=artifact_root,
                 fixture_root=fixture_root,
                 require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
             )
         self.assertTrue(any("preserved workspace" in error for error in errors))
 
@@ -280,6 +421,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 artifact_root=artifact_root,
                 fixture_root=fixture_root,
                 require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
             )
         self.assertTrue(any("manifest SHA-256" in error for error in errors))
 
@@ -301,6 +443,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
                 artifact_root=artifact_root,
                 fixture_root=fixture_root,
                 require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
             )
         self.assertTrue(any("does not identify this result run" in error for error in errors))
 
@@ -314,12 +457,15 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         record = self.result("with-1", "with-skill")
         record["workspace_diff_sha256"] = "c" * 64
         record["changed_paths"] = ["changed.txt"]
-        _, errors = score_behavior_results.score_results(
-            cases,
-            [record],
-            require_complete=False,
-            require_artifact_binding=True,
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            _, errors = score_behavior_results.score_results(
+                cases,
+                [record],
+                require_complete=False,
+                artifact_root=Path(directory),
+                require_artifact_binding=True,
+                expected_skill_commit="a" * 40,
+            )
         self.assertTrue(any("lacks artifact binding" in error for error in errors))
 
     def test_direct_scoring_rejects_incomplete_artifact_binding(self) -> None:
@@ -342,7 +488,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
             [record],
             require_complete=False,
         )
-        self.assertTrue(any("incomplete artifact binding" in error for error in errors))
+        self.assertTrue(any("incomplete artifact paths" in error for error in errors))
 
     def test_non_fixture_result_rejects_workspace_evidence(self) -> None:
         record = self.result("with-1", "with-skill")
@@ -383,7 +529,7 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "results.jsonl"
             path.write_text(json.dumps(record) + "\n", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "incomplete artifact binding"):
+            with self.assertRaisesRegex(ValueError, "incomplete artifact paths"):
                 score_behavior_results.load_results(path)
 
     def test_strict_release_rejects_custom_case_suite(self) -> None:
@@ -391,11 +537,55 @@ class ScoreBehaviorResultsTests(unittest.TestCase):
             score_behavior_results.require_canonical_cases(self.cases, {})
         score_behavior_results.require_canonical_cases(self.cases, dict(self.cases))
 
-    def test_strict_cli_requires_artifact_root(self) -> None:
-        with redirect_stderr(StringIO()), mock.patch.object(
+    def test_strict_cli_remains_compatible_without_artifact_root(self) -> None:
+        report = {
+            "summary": {"must_pass_rate": 1.0, "must_not_violations": 0},
+            "release_gate_failures": [],
+        }
+        with redirect_stderr(StringIO()), redirect_stdout(StringIO()), mock.patch.object(
             sys,
             "argv",
             ["score_behavior_results.py", "results.jsonl", "--strict"],
+        ), mock.patch.object(
+            score_behavior_results,
+            "load_cases",
+            return_value=self.cases,
+        ), mock.patch.object(
+            score_behavior_results,
+            "load_results",
+            return_value=[self.result("with-1", "with-skill")],
+        ), mock.patch.object(
+            score_behavior_results,
+            "score_results",
+            return_value=(report, []),
+        ) as score:
+            self.assertEqual(score_behavior_results.main(), 0)
+        self.assertIsNone(score.call_args.kwargs["artifact_root"])
+        self.assertFalse(score.call_args.kwargs["require_artifact_binding"])
+        self.assertIsNone(score.call_args.kwargs["expected_skill_commit"])
+
+    def test_artifact_binding_cli_requires_root_and_expected_commit(self) -> None:
+        with redirect_stderr(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_behavior_results.py",
+                "results.jsonl",
+                "--require-artifact-binding",
+            ],
+        ), self.assertRaises(SystemExit):
+            score_behavior_results.main()
+
+        with redirect_stderr(StringIO()), mock.patch.object(
+            sys,
+            "argv",
+            [
+                "score_behavior_results.py",
+                "results.jsonl",
+                "--require-artifact-binding",
+                "--artifact-root",
+                "artifacts",
+            ],
         ), self.assertRaises(SystemExit):
             score_behavior_results.main()
 

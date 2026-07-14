@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path, PurePosixPath
 
+from capture_behavior_artifact import tree_sha256
 from skill_utils import ROOT, is_link_or_junction, resolves_within, skill_directories
 from validate_source_policy import has_exact_case
 
@@ -14,11 +15,16 @@ ARTIFACT_MODES = {"none", "synthetic-inline", "repository-fixture"}
 MIN_KOREAN_CASES = 2
 HANGUL_PATTERN = re.compile(r"[\uac00-\ud7a3]")
 WINDOWS_DRIVE_PATTERN = re.compile(r"^[A-Za-z]:")
+SHA256 = re.compile(r"^[a-f0-9]{64}$")
 MIN_KOREAN_PROMPT_SYLLABLES = 8
 KOREAN_RESPONSE_CRITERION = "한국어로 응답"
 
 
-def repository_fixture_errors(case_id: object, fixture_path: object) -> list[str]:
+def repository_fixture_errors(
+    case_id: object,
+    fixture_path: object,
+    fixture_tree_sha256: object,
+) -> list[str]:
     label = str(case_id)
     if not isinstance(fixture_path, str) or not fixture_path:
         return [f"{label} repository-fixture requires fixture_path"]
@@ -48,6 +54,17 @@ def repository_fixture_errors(case_id: object, fixture_path: object) -> list[str
         return [f"{label} fixture must contain at least one file"]
     if any(is_link_or_junction(entry) for entry in entries):
         return [f"{label} fixture contains a linked path"]
+    if (
+        not isinstance(fixture_tree_sha256, str)
+        or SHA256.fullmatch(fixture_tree_sha256) is None
+    ):
+        return [f"{label} repository-fixture requires fixture_tree_sha256"]
+    try:
+        actual_fixture_tree_sha256 = tree_sha256(candidate)
+    except ValueError:
+        return [f"{label} fixture could not be inspected"]
+    if actual_fixture_tree_sha256 != fixture_tree_sha256:
+        return [f"{label} fixture_tree_sha256 does not match fixture content"]
     return []
 
 
@@ -92,9 +109,17 @@ def validate_cases() -> list[str]:
         if artifact_mode not in ARTIFACT_MODES:
             errors.append(f"{case_id or index} has an invalid artifact_mode")
         if artifact_mode == "repository-fixture":
-            errors.extend(repository_fixture_errors(case_id or index, case.get("fixture_path")))
-        elif "fixture_path" in case:
-            errors.append(f"{case_id or index} fixture_path requires repository-fixture mode")
+            errors.extend(
+                repository_fixture_errors(
+                    case_id or index,
+                    case.get("fixture_path"),
+                    case.get("fixture_tree_sha256"),
+                )
+            )
+        elif "fixture_path" in case or "fixture_tree_sha256" in case:
+            errors.append(
+                f"{case_id or index} fixture fields require repository-fixture mode"
+            )
         for field in ("must", "must_not"):
             values = case.get(field)
             if not isinstance(values, list) or not values or not all(isinstance(value, str) and value for value in values):

@@ -43,7 +43,9 @@ class BehaviorCaseTests(unittest.TestCase):
         for case in repository_cases:
             self.assertEqual(
                 validate_behavior_cases.repository_fixture_errors(
-                    case["id"], case.get("fixture_path")
+                    case["id"],
+                    case.get("fixture_path"),
+                    case.get("fixture_tree_sha256"),
                 ),
                 [],
             )
@@ -52,14 +54,16 @@ class BehaviorCaseTests(unittest.TestCase):
         self.assertTrue(
             any(
                 "requires fixture_path" in error
-                for error in validate_behavior_cases.repository_fixture_errors("case", None)
+                for error in validate_behavior_cases.repository_fixture_errors(
+                    "case", None, None
+                )
             )
         )
         self.assertTrue(
             any(
                 "invalid fixture_path" in error
                 for error in validate_behavior_cases.repository_fixture_errors(
-                    "case", "evals/fixtures/../behavior-cases.json"
+                    "case", "evals/fixtures/../behavior-cases.json", "a" * 64
                 )
             )
         )
@@ -72,7 +76,20 @@ class BehaviorCaseTests(unittest.TestCase):
             path.write_text(json.dumps(cases), encoding="utf-8")
             with patch.object(validate_behavior_cases, "CASES_PATH", path):
                 errors = validate_behavior_cases.validate_cases()
-        self.assertTrue(any("requires repository-fixture mode" in error for error in errors))
+        self.assertTrue(any("fixture fields require repository-fixture mode" in error for error in errors))
+
+    def test_repository_fixture_hash_must_match_the_fixture_content(self) -> None:
+        cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))
+        repository_case = next(
+            case for case in cases if case.get("artifact_mode") == "repository-fixture"
+        )
+        repository_case["fixture_tree_sha256"] = "f" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text(json.dumps(cases), encoding="utf-8")
+            with patch.object(validate_behavior_cases, "CASES_PATH", path):
+                errors = validate_behavior_cases.validate_cases()
+        self.assertTrue(any("does not match fixture content" in error for error in errors))
 
     def test_unhashable_rubric_items_return_validation_errors(self) -> None:
         cases = json.loads(validate_behavior_cases.CASES_PATH.read_text(encoding="utf-8"))

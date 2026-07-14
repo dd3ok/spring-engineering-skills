@@ -83,7 +83,9 @@ class ApplicationDeveloperTests(unittest.TestCase):
         self.assertIn("as the primary output", planner["description"])
         self.assertIn("incidental to a requested greenfield implementation", planner["description"])
         self.assertIn("Apply `references/greenfield-baseline-policy.json`", self.playbook)
-        self.assertIn("Spring Initializr default stable GA", self.playbook)
+        self.assertIn("spring-initializr-defaults/1", self.playbook)
+        self.assertIn("metadata default only when it is GA", self.playbook)
+        self.assertIn("save a metadata snapshot only when the user requests", self.playbook)
         self.assertIn("Do not infer a vendor LTS policy", self.playbook)
         sources = (
             self.root / "references" / "official-sources.md"
@@ -96,19 +98,26 @@ class ApplicationDeveloperTests(unittest.TestCase):
             )
         )
         self.assertEqual(
-            policy["spring_boot"]["selection"],
-            "initializr-default-stable-ga",
+            policy["metadata"]["accept"],
+            "application/vnd.initializr.v2.3+json",
         )
         self.assertEqual(
-            policy["java"]["selection"],
-            "user-choice-or-initializr-default",
+            policy["metadata"]["selection_algorithm"],
+            "spring-initializr-defaults/1",
         )
-        self.assertTrue(policy["java"]["do_not_infer_vendor_lts"])
+        self.assertIn("highest-ga", policy["spring_boot"]["omitted"])
+        self.assertIn("highest-ga", policy["spring_boot"]["version_line"])
+        self.assertTrue(policy["constraints"]["do_not_infer_vendor_lts"])
         self.assertEqual(
-            policy["build_tool"]["selection"],
-            "user-choice-or-initializr-default-project-type",
+            policy["metadata_backed_fields"]["project_type"],
+            "user-choice-or-metadata-default-project-format",
         )
         self.assertIn("metadata_sha256", policy["provenance_required"])
+        self.assertIn("generation_parameters", policy["provenance_required"])
+        self.assertEqual(
+            policy["metadata"]["saved_snapshot"],
+            "only-when-user-requests-a-saved-artifact",
+        )
 
         for source in (
             "https://docs.spring.io/spring-data/jpa/reference/",
@@ -117,6 +126,8 @@ class ApplicationDeveloperTests(unittest.TestCase):
             "https://documentation.red-gate.com/flyway/reference",
             "https://maven.apache.org/tools/wrapper/",
             "https://docs.gradle.org/current/userguide/gradle_wrapper.html",
+            "https://docs.spring.io/initializr/docs/current/reference/html/",
+            "https://docs.spring.io/initializr/docs/current/api/io/spring/initializr/web/controller/ProjectMetadataController.html",
         ):
             self.assertIn(source, sources)
 
@@ -127,7 +138,8 @@ class ApplicationDeveloperTests(unittest.TestCase):
         )
         self.assertEqual(case["artifact_mode"], "repository-fixture")
         self.assertTrue(any("continue implementation" in item for item in case["must"]))
-        self.assertTrue(any("Initializr defaults" in item for item in case["must"]))
+        self.assertTrue(any("Initializr metadata algorithm" in item for item in case["must"]))
+        self.assertTrue(any("metadata hash" in item for item in case["must"]))
         self.assertIn(
             "Stop solely because the prompt does not pin an exact version",
             case["must_not"],

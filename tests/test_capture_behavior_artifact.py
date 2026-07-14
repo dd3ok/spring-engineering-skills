@@ -28,6 +28,7 @@ class CaptureBehaviorArtifactTests(unittest.TestCase):
             (workspace / "deleted.txt").unlink()
             (workspace / "added.txt").write_text("added", encoding="utf-8")
 
+            fixture_tree_sha256 = capture_behavior_artifact.tree_sha256(fixture)
             manifest = capture_behavior_artifact.build_manifest(
                 "implementation-case", fixture, workspace
             )
@@ -37,6 +38,10 @@ class CaptureBehaviorArtifactTests(unittest.TestCase):
             ["added.txt", "changed.txt", "deleted.txt"],
         )
         self.assertRegex(str(manifest["workspace_diff_sha256"]), r"^[a-f0-9]{64}$")
+        self.assertEqual(
+            manifest["fixture_tree_sha256"],
+            fixture_tree_sha256,
+        )
         changes = {change["path"]: change for change in manifest["changes"]}
         self.assertIsNone(changes["added.txt"]["before_sha256"])
         self.assertIsNone(changes["deleted.txt"]["after_sha256"])
@@ -52,6 +57,17 @@ class CaptureBehaviorArtifactTests(unittest.TestCase):
             second = capture_behavior_artifact.build_manifest("empty-case", fixture, workspace)
         self.assertEqual(first, second)
         self.assertEqual(first["changed_paths"], [])
+
+    def test_fixture_tree_digest_changes_when_baseline_content_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory) / "fixture"
+            fixture.mkdir()
+            baseline = fixture / "baseline.txt"
+            baseline.write_text("one", encoding="utf-8")
+            first = capture_behavior_artifact.tree_sha256(fixture)
+            baseline.write_text("two", encoding="utf-8")
+            second = capture_behavior_artifact.tree_sha256(fixture)
+        self.assertNotEqual(first, second)
 
     def test_top_level_git_metadata_is_ignored(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

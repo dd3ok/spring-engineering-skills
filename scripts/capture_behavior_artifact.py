@@ -80,6 +80,20 @@ def tree_files(root: Path) -> dict[str, str]:
     return files
 
 
+def tree_digest(files: dict[str, str]) -> str:
+    canonical = json.dumps(
+        files,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def tree_sha256(root: Path) -> str:
+    return tree_digest(tree_files(root))
+
+
 def build_manifest(case_id: str, fixture: Path, workspace: Path) -> dict[str, object]:
     if CASE_ID.fullmatch(case_id) is None:
         raise ValueError("case_id is invalid")
@@ -112,6 +126,7 @@ def build_manifest(case_id: str, fixture: Path, workspace: Path) -> dict[str, ob
     return {
         "schema_version": SCHEMA_VERSION,
         "case_id": case_id,
+        "fixture_tree_sha256": tree_digest(before),
         "workspace_diff_sha256": hashlib.sha256(canonical).hexdigest(),
         "changed_paths": [change["path"] for change in changes],
         "changes": changes,
