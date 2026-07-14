@@ -72,6 +72,14 @@
       "review_scope": ["active project listing", "Projects in the Attic classification", "consumer claim markers"],
       "reviewed_on": "2026-07-13",
       "review_every_days": 30
+    },
+    {
+      "id": "spring-initializr-metadata-contract",
+      "sources": ["https://start.spring.io/metadata/client", "https://docs.spring.io/initializr/docs/current/reference/html/", "https://docs.spring.io/initializr/docs/current/api/io/spring/initializr/web/controller/ProjectMetadataController.html"],
+      "consumers": ["scripts/check_spring_initializr_policy.py", "skills/spring-application-developer/references/greenfield-baseline-policy.json", "skills/spring-application-developer/references/implementation-playbook.md"],
+      "review_scope": ["metadata media type", "defaults", "project type build tags", "platform version fields"],
+      "reviewed_on": "2026-07-14",
+      "review_every_days": 30
     }
   ]
 }
