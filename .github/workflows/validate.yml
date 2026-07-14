@@ -53,4 +53,4 @@ jobs:
           python-version: "3.12"
 
       - name: Run portability smoke tests
-        run: python -m unittest tests.test_skill_structure tests.test_check_links tests.test_evidence_collector tests.test_spring_project_lifecycle
+        run: python -m unittest tests.test_skill_structure tests.test_check_links tests.test_evidence_collector tests.test_spring_project_lifecycle tests.test_capture_behavior_artifact tests.test_score_behavior_results

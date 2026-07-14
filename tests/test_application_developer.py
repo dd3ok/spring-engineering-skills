@@ -46,6 +46,19 @@ class ApplicationDeveloperTests(unittest.TestCase):
         ):
             self.assertIn(value, self.skill)
 
+        reviewer = (
+            ROOT / "skills" / "spring-engineering-review" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Keep this skill read-only", reviewer)
+        self.assertIn(
+            "hand implementation to `spring-application-developer` before editing",
+            reviewer,
+        )
+        self.assertNotIn(
+            "Keep review requests read-only unless the user explicitly asks for implementation",
+            reviewer,
+        )
+
     def test_playbook_pins_proxy_and_verification_boundaries(self) -> None:
         for value in (
             "Self-invocation does not trigger proxy-based transactions",
@@ -69,12 +82,54 @@ class ApplicationDeveloperTests(unittest.TestCase):
         planner, _ = parse_frontmatter(ROOT / "skills" / "spring-upgrade-planner" / "SKILL.md")
         self.assertIn("as the primary output", planner["description"])
         self.assertIn("incidental to a requested greenfield implementation", planner["description"])
-        self.assertIn("resolve it to an exact GA", self.playbook)
-        self.assertIn("Spring Initializr metadata", self.playbook)
+        self.assertIn("Apply `references/greenfield-baseline-policy.json`", self.playbook)
+        self.assertIn("spring-initializr-defaults/1", self.playbook)
+        self.assertIn("metadata default only when it is GA", self.playbook)
+        self.assertIn("save a metadata snapshot only when the user requests", self.playbook)
+        self.assertIn("Do not infer a vendor LTS policy", self.playbook)
         sources = (
             self.root / "references" / "official-sources.md"
         ).read_text(encoding="utf-8")
         self.assertIn("https://start.spring.io/metadata/client", sources)
+
+        policy = json.loads(
+            (self.root / "references" / "greenfield-baseline-policy.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            policy["metadata"]["accept"],
+            "application/vnd.initializr.v2.3+json",
+        )
+        self.assertEqual(
+            policy["metadata"]["selection_algorithm"],
+            "spring-initializr-defaults/1",
+        )
+        self.assertIn("highest-ga", policy["spring_boot"]["omitted"])
+        self.assertIn("highest-ga", policy["spring_boot"]["version_line"])
+        self.assertTrue(policy["constraints"]["do_not_infer_vendor_lts"])
+        self.assertEqual(
+            policy["metadata_backed_fields"]["project_type"],
+            "user-choice-or-metadata-default-project-format",
+        )
+        self.assertIn("metadata_sha256", policy["provenance_required"])
+        self.assertIn("generation_parameters", policy["provenance_required"])
+        self.assertEqual(
+            policy["metadata"]["saved_snapshot"],
+            "only-when-user-requests-a-saved-artifact",
+        )
+
+        for source in (
+            "https://docs.spring.io/spring-data/jpa/reference/",
+            "https://docs.spring.io/spring-data/relational/reference/jdbc.html",
+            "https://jdbc.postgresql.org/documentation/",
+            "https://documentation.red-gate.com/flyway/reference",
+            "https://maven.apache.org/tools/wrapper/",
+            "https://docs.gradle.org/current/userguide/gradle_wrapper.html",
+            "https://docs.spring.io/initializr/docs/current/reference/html/",
+            "https://docs.spring.io/initializr/docs/current/api/io/spring/initializr/web/controller/ProjectMetadataController.html",
+        ):
+            self.assertIn(source, sources)
 
     def test_unpinned_greenfield_behavior_requires_implementation_not_refusal(self) -> None:
         cases = json.loads((ROOT / "evals" / "behavior-cases.json").read_text(encoding="utf-8"))
@@ -83,6 +138,8 @@ class ApplicationDeveloperTests(unittest.TestCase):
         )
         self.assertEqual(case["artifact_mode"], "repository-fixture")
         self.assertTrue(any("continue implementation" in item for item in case["must"]))
+        self.assertTrue(any("Initializr metadata algorithm" in item for item in case["must"]))
+        self.assertTrue(any("metadata hash" in item for item in case["must"]))
         self.assertIn(
             "Stop solely because the prompt does not pin an exact version",
             case["must_not"],

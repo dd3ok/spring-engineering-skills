@@ -26,6 +26,8 @@ class ValidateAllTests(unittest.TestCase):
             "tests.test_evidence_collector tests.test_spring_project_lifecycle",
             workflow,
         )
+        self.assertIn("tests.test_capture_behavior_artifact", workflow)
+        self.assertIn("tests.test_score_behavior_results", workflow)
         self.assertIn("-r .github/requirements-ci.txt", workflow)
         self.assertNotIn("check_links.py --online", workflow)
         self.assertNotIn("matrix:", workflow)

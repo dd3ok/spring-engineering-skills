@@ -17,6 +17,10 @@ MAX_TOTAL_BYTES = 64 * 1024 * 1024
 CHUNK_BYTES = 1024 * 1024
 
 
+def raise_walk_error(error: OSError) -> None:
+    raise error
+
+
 def file_digest(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -35,7 +39,12 @@ def tree_files(root: Path) -> dict[str, str]:
     files: dict[str, str] = {}
     total_bytes = 0
     try:
-        for current, directories, filenames in os.walk(resolved_root, followlinks=False):
+        for current, directories, filenames in os.walk(
+            resolved_root,
+            topdown=True,
+            onerror=raise_walk_error,
+            followlinks=False,
+        ):
             current_path = Path(current)
             relative_directory = current_path.relative_to(resolved_root)
             directories.sort()
@@ -71,6 +80,20 @@ def tree_files(root: Path) -> dict[str, str]:
     return files
 
 
+def tree_digest(files: dict[str, str]) -> str:
+    canonical = json.dumps(
+        files,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def tree_sha256(root: Path) -> str:
+    return tree_digest(tree_files(root))
+
+
 def build_manifest(case_id: str, fixture: Path, workspace: Path) -> dict[str, object]:
     if CASE_ID.fullmatch(case_id) is None:
         raise ValueError("case_id is invalid")
@@ -103,6 +126,7 @@ def build_manifest(case_id: str, fixture: Path, workspace: Path) -> dict[str, ob
     return {
         "schema_version": SCHEMA_VERSION,
         "case_id": case_id,
+        "fixture_tree_sha256": tree_digest(before),
         "workspace_diff_sha256": hashlib.sha256(canonical).hexdigest(),
         "changed_paths": [change["path"] for change in changes],
         "changes": changes,

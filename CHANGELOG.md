@@ -4,6 +4,7 @@ All notable changes to Spring Engineering Skills are documented here.
 
 ## Unreleased
 
+- Made repository-fixture capture fail closed on traversal errors and added opt-in artifact-bound scoring with pinned commits, fixture trees, canonical run identities, and preserved workspaces while retaining the 1.0 `--strict` contract; also defined a provenance-complete Initializr selection algorithm for unpinned greenfield generation.
 - Bound implementation behavior evaluations to real repository fixtures and content-addressed workspace diffs; clarified evidence-backed greenfield version selection and extended lifecycle portability coverage.
 - Added `spring-application-developer` for bounded greenfield and existing-project implementation, with explicit peer-skill ownership, routing cases, and a localized behavior contract.
 - Corrected Spring Web Flow to an active project and Spring Cloud Contract to an Attic project; added consumer-bound lifecycle claims plus a monthly official-page drift check.

@@ -127,6 +127,7 @@
     "skill": "spring-application-developer",
     "artifact_mode": "repository-fixture",
     "fixture_path": "evals/fixtures/korean-existing-application-fix",
+    "fixture_tree_sha256": "3fa472ac3f2524db746c047f58facbc470367d25fba1db963c7f53f70745b55b",
     "response_language": "ko",
     "prompt": "제공된 기존 Spring Boot fixture에서 @Transactional self-invocation 결함을 실제로 수정하고 회귀 테스트를 추가해줘. UNRELATED-NOTES.md는 다른 사람의 작업이므로 바이트 단위로 보존하고, Maven이나 테스트는 실행하지 말아줘.",
     "must": ["한국어로 응답", "실제 호출 경로와 proxy 경계를 먼저 확인", "workspace diff에 최소 범위의 Spring 구현 변경과 회귀 테스트를 실제로 생성", "UNRELATED-NOTES.md를 바이트 단위로 보존", "빌드와 테스트가 실행되지 않았음을 구분"],
@@ -137,8 +138,9 @@
     "skill": "spring-application-developer",
     "artifact_mode": "repository-fixture",
     "fixture_path": "evals/fixtures/developer-greenfield-unpinned-version",
+    "fixture_tree_sha256": "2e5eb2cf6832af7273665e2c8e39d8054726e1606d7c339639bbbb3410b1c889",
     "prompt": "Create a new Spring Boot REST order service in the provided empty fixture using a supported Java line, PostgreSQL, Flyway, and tests. No exact Boot version is pinned, and build or container execution is not authorized.",
-    "must": ["Resolve Spring Boot and Java to exact supported versions from current official evidence and continue implementation", "Create an actual workspace diff with a build descriptor, application source, versioned migration, and focused tests", "Use the Boot BOM and a minimal dependency set", "Define bounded API, validation, Problem Details, security, and package structure", "Use production-equivalent PostgreSQL test semantics", "Externalize secrets and include proportionate observability", "Label build, test, and container commands as unrun"],
-    "must_not": ["Stop solely because the prompt does not pin an exact version", "Invent a latest or supported version without evidence", "Add unrequested Kafka, cache, AI, discovery, or native-image infrastructure", "Run build tools or containers", "Claim production readiness without executed verification"]
+    "must": ["Resolve exact Spring Boot, Java, and project type with the pinned Initializr metadata algorithm; record the source, media type, retrieval time, metadata hash, selected/default fields, generation parameters, and wrapper status; then continue implementation", "Create an actual workspace diff with a build descriptor, application source, versioned migration, and focused tests", "Use the Boot BOM and a minimal dependency set", "Define bounded API, validation, Problem Details, security, and package structure", "Use production-equivalent PostgreSQL test semantics", "Externalize secrets and include proportionate observability", "Label build, test, and container commands as unrun"],
+    "must_not": ["Stop solely because the prompt does not pin an exact version", "Invent a latest or supported version without evidence or infer a vendor LTS policy", "Add unrequested Kafka, cache, AI, discovery, or native-image infrastructure", "Run build tools or containers", "Claim production readiness without executed verification"]
   }
 ]
