@@ -38,6 +38,8 @@ class ApplicationDeveloperTests(unittest.TestCase):
     def test_workflow_preserves_unrelated_changes_and_verification_truth(self) -> None:
         for value in (
             "Preserve pre-existing and unrelated worktree changes",
+            "A specific user prohibition is an absolute execution boundary",
+            "a failed launch still violates the boundary",
             "Run repository-provided verification only when",
             "Do not claim a build, test, migration, or runtime check passed",
             "spring-engineering-review",
@@ -67,8 +69,56 @@ class ApplicationDeveloperTests(unittest.TestCase):
             "Separate passed, failed, skipped, and unrun checks",
             "Spring Boot BOM and minimal starters",
             "Problem Details",
+            "Do not probe availability by launching the prohibited command",
         ):
             self.assertIn(value, self.playbook)
+
+    def test_greenfield_transport_summary_security_and_health_boundaries(self) -> None:
+        for value in (
+            "before the first workspace mutation",
+            "Never use an insecure TLS fallback",
+            "do not invent Basic, API-key, session, or OAuth2 behavior",
+            "include Actuator health as the minimum operational baseline",
+            "a prohibition on build or container execution does not prohibit adding justified Testcontainers",
+            "keep the production-equivalent test definition and report the command as unrun",
+        ):
+            self.assertIn(value, self.playbook)
+        self.assertIn("Never disable TLS certificate or hostname verification", self.skill)
+
+        policy = json.loads(
+            (self.root / "references" / "greenfield-baseline-policy.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            policy["transport"]["certificate_and_hostname_verification"],
+            "required",
+        )
+        self.assertEqual(
+            policy["transport"]["verified_fetch_failure"],
+            "block-version-sensitive-generation-without-inference",
+        )
+        self.assertIn("curl-k-or-insecure", policy["transport"]["prohibited_fallbacks"])
+        self.assertEqual(
+            policy["user_summary_rules"]["delivery_checkpoint"],
+            "emit-before-first-workspace-mutation",
+        )
+
+    def test_root_readmes_explain_execution_and_tls_boundaries(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        readme_ko = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+        for value in (
+            "execution authorization is separate from editing scope",
+            "reporting executable checks as unrun",
+            "normal TLS verification",
+        ):
+            self.assertIn(value, readme)
+        for value in (
+            "실행 권한은 편집 범위와 별개",
+            "실행 검증을 미실행으로 보고",
+            "정상 TLS 검증",
+        ):
+            self.assertIn(value, readme_ko)
 
     def test_compound_request_handoff_is_documented_in_both_languages(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -154,9 +204,16 @@ class ApplicationDeveloperTests(unittest.TestCase):
         self.assertTrue(any("continue implementation" in item for item in case["must"]))
         self.assertTrue(any("Initializr metadata algorithm" in item for item in case["must"]))
         self.assertTrue(any("compact user summary" in item for item in case["must"]))
+        self.assertTrue(any("before any workspace mutation" in item for item in case["must"]))
+        self.assertTrue(any("explicit security posture" in item for item in case["must"]))
+        self.assertTrue(any("minimum proportionate operational baseline" in item for item in case["must"]))
         self.assertTrue(any("metadata hash" in item for item in case["must"]))
         self.assertIn(
             "Stop solely because the prompt does not pin an exact version",
+            case["must_not"],
+        )
+        self.assertIn(
+            "Disable TLS certificate verification or use an insecure transport fallback",
             case["must_not"],
         )
 

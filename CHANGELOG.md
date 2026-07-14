@@ -4,6 +4,7 @@ All notable changes to Spring Engineering Skills are documented here.
 
 ## Unreleased
 
+- Made implementation execution prohibitions absolute while preserving production-equivalent test definitions, made Initializr retrieval fail closed without TLS bypasses, required the compact version summary before workspace mutation, and aligned greenfield security posture and minimum health expectations.
 - Made sampled routing and behavior smoke commands fail on observed model failures, bound greenfield evaluation evidence to content-addressed Initializr response bytes, tightened project-type drift diagnostics, fixed compact provenance rendering, and extended fixture line-ending rules.
 - Registered the Spring Initializr metadata contract for recurring source review and bounded monthly semantic checks, separated full greenfield provenance capture from its compact default user summary, documented tiered model evaluation, and normalized common Kotlin and Gradle fixture text formats across platforms.
 - Made repository-fixture capture fail closed on traversal errors and added opt-in artifact-bound scoring with pinned commits, fixture trees, canonical run identities, and preserved workspaces while retaining the 1.0 `--strict` contract; also defined a provenance-complete Initializr selection algorithm for unpinned greenfield generation.
