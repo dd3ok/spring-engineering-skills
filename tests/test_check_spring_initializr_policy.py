@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,22 @@ def valid_metadata() -> dict[str, object]:
 
 
 class CheckSpringInitializrPolicyTests(unittest.TestCase):
+    def create_directory_link(self, link: Path, target: Path) -> None:
+        if os.name == "nt":
+            created = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if created.returncode != 0:
+                self.skipTest(f"junction creation unavailable: {created.stderr.strip()}")
+            return
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"symbolic link creation unavailable: {error}")
+
     def test_repository_contract_and_representative_metadata_are_valid(self) -> None:
         source, accept, errors = initializr.load_contract()
         self.assertEqual(errors, [])
@@ -150,6 +167,28 @@ class CheckSpringInitializrPolicyTests(unittest.TestCase):
             path.write_bytes(b"different")
             with self.assertRaisesRegex(ValueError, "different bytes"):
                 initializr.save_evaluation_source(payload, root, "a" * 40)
+
+    def test_evaluation_source_rejects_linked_root_and_parent(self) -> None:
+        payload = json.dumps(valid_metadata()).encode("utf-8")
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            outside_root = base / "outside-root"
+            outside_root.mkdir()
+            linked_root = base / "linked-root"
+            self.create_directory_link(linked_root, outside_root)
+            with self.assertRaisesRegex(ValueError, "link or junction"):
+                initializr.save_evaluation_source(payload, linked_root, "a" * 40)
+            self.assertEqual(list(outside_root.iterdir()), [])
+
+            artifact_root = base / "artifact-root"
+            linked_parent = artifact_root / ("a" * 40) / "sources" / "initializr"
+            linked_parent.parent.mkdir(parents=True)
+            outside_parent = base / "outside-parent"
+            outside_parent.mkdir()
+            self.create_directory_link(linked_parent, outside_parent)
+            with self.assertRaisesRegex(ValueError, "link or junction"):
+                initializr.save_evaluation_source(payload, artifact_root, "a" * 40)
+            self.assertEqual(list(outside_parent.iterdir()), [])
 
 
 if __name__ == "__main__":

@@ -791,7 +791,7 @@ def collect(root: Path, max_files: int, max_file_bytes: int) -> dict[str, Any]:
         "schema_version": SCHEMA_VERSION,
         "repository": {"root": "."},
         "collection": {
-            "collector_version": "1.0.0", "mode": "static", "network_used": False,
+            "collector_version": "1.1.0", "mode": "static", "network_used": False,
             "build_executed": False, "provenance": None,
         },
         "projects": sorted(unique_projects.values(), key=lambda item: (item["path"], item["descriptor"])),
