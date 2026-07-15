@@ -37,6 +37,8 @@ For a compound "analyze and fix" request, use `spring-application-developer` whe
 
 All eight skills return structured results in the agent's normal response. Activating a skill does not by itself authorize writing a file to the workspace.
 
+For implementation work, execution authorization is separate from editing scope. An explicit prohibition on Maven, Gradle, tests, containers, or another tool is absolute; the skill may still author the requested tests and configuration while reporting executable checks as unrun. Greenfield version evidence is retrieved only with normal TLS verification and is never guessed after verified retrieval fails.
+
 Only two skills additionally define canonical, versioned JSON artifacts and bundled validators:
 
 - `spring-evidence-collector` can save portable, redacted repository facts as `spring-evidence/1` so another review or plan can reuse the same verified input.
