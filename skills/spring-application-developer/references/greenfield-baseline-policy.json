@@ -4,8 +4,18 @@
     "source": "https://start.spring.io/metadata/client",
     "accept": "application/vnd.initializr.v2.3+json",
     "response_bytes": "hash-before-parsing",
-    "saved_snapshot": "only-when-user-requests-a-saved-artifact",
+    "saved_snapshot": "user-requested-artifact-or-isolated-evaluation-evidence",
     "selection_algorithm": "spring-initializr-defaults/1"
+  },
+  "transport": {
+    "certificate_and_hostname_verification": "required",
+    "provided_source": "use-only-when-bound-to-current-run-and-hash-verified",
+    "prohibited_fallbacks": [
+      "curl-k-or-insecure",
+      "runtime-wide-certificate-verification-disable",
+      "custom-trust-all-client"
+    ],
+    "verified_fetch_failure": "block-version-sensitive-generation-without-inference"
   },
   "spring_boot": {
     "ga_rule": "qualifier-absent-or-RELEASE; reject-M-RC-SNAPSHOT",
@@ -61,8 +71,10 @@
     "metadata_sha256"
   ],
   "user_summary_rules": {
+    "delivery_checkpoint": "emit-before-first-workspace-mutation",
     "selected_vs_default": "identify-user-selected-and-defaulted-fields",
-    "metadata_sha256": "render-a-short-prefix",
+    "metadata_sha256": "first-12-lowercase-hex",
+    "retrieved_at_utc": "RFC3339-UTC-seconds-with-Z",
     "wrapper": "include-only-when-unavailable-or-version-relevant",
     "full_provenance": "keep-for-the-current-run-and-persist-only-in-an-evaluation-trace-or-user-requested-artifact",
     "saved_artifact": "never-create-without-an-explicit-user-request"

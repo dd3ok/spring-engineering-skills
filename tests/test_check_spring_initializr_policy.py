@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -59,6 +60,30 @@ class CheckSpringInitializrPolicyTests(unittest.TestCase):
         self.assertTrue(any("no build tag" in error for error in errors))
         self.assertTrue(any("not a project format" in error for error in errors))
 
+    def test_unadvertised_default_does_not_report_dependent_type_errors(self) -> None:
+        metadata = valid_metadata()
+        metadata["type"]["default"] = "missing-project"
+        errors = initializr.metadata_errors(json.dumps(metadata).encode("utf-8"))
+        self.assertEqual(
+            errors,
+            ["Initializr metadata default is not advertised: type=missing-project"],
+        )
+
+    def test_missing_default_type_tags_report_one_root_error(self) -> None:
+        metadata = valid_metadata()
+        metadata["type"]["values"][0].pop("tags")
+        errors = initializr.metadata_errors(json.dumps(metadata).encode("utf-8"))
+        self.assertEqual(errors, ["Initializr default project type tags are missing or invalid"])
+
+    def test_every_project_format_type_requires_a_build_tag(self) -> None:
+        metadata = valid_metadata()
+        metadata["type"]["values"][1]["tags"] = {"format": "project"}
+        errors = initializr.metadata_errors(json.dumps(metadata).encode("utf-8"))
+        self.assertEqual(errors, ["Initializr project type has no build tag: maven-project"])
+
+        metadata["type"]["values"][1]["tags"] = {"format": "build"}
+        self.assertEqual(initializr.metadata_errors(json.dumps(metadata).encode("utf-8")), [])
+
     def test_invalid_json_and_content_type_are_rejected(self) -> None:
         self.assertTrue(initializr.metadata_errors(b"not-json"))
         self.assertIsNone(
@@ -106,6 +131,25 @@ class CheckSpringInitializrPolicyTests(unittest.TestCase):
                     0.01,
                 )
         self.assertEqual(run.call_args.kwargs["timeout"], 0.01)
+
+    def test_evaluation_source_is_content_addressed_and_never_overwritten(self) -> None:
+        payload = json.dumps(valid_metadata()).encode("utf-8")
+        digest = hashlib.sha256(payload).hexdigest()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = initializr.save_evaluation_source(payload, root, "a" * 40)
+            self.assertEqual(
+                path,
+                root / ("a" * 40) / "sources" / "initializr" / f"{digest}.json",
+            )
+            self.assertEqual(path.read_bytes(), payload)
+            self.assertEqual(
+                initializr.save_evaluation_source(payload, root, "a" * 40),
+                path,
+            )
+            path.write_bytes(b"different")
+            with self.assertRaisesRegex(ValueError, "different bytes"):
+                initializr.save_evaluation_source(payload, root, "a" * 40)
 
 
 if __name__ == "__main__":

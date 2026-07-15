@@ -8,12 +8,14 @@ import sys
 from pathlib import Path
 
 from capture_behavior_artifact import CASE_ID, build_manifest
+from check_spring_initializr_policy import metadata_errors
 from skill_utils import ROOT, is_link_or_junction
 
 
 DEFAULT_CASES = ROOT / "evals" / "behavior-cases.json"
 MAX_RESULTS_BYTES = 8 * 1024 * 1024
 MAX_ARTIFACT_MANIFEST_BYTES = 2 * 1024 * 1024
+MAX_INITIALIZR_SOURCE_BYTES = 1024 * 1024
 SHA256 = re.compile(r"^[a-f0-9]{64}$")
 COMMIT = re.compile(r"^[a-f0-9]{40}$")
 RUN_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
@@ -27,10 +29,11 @@ ARTIFACT_PATH_FIELDS = {
     "artifact_workspace_path",
 }
 ARTIFACT_FIELDS = {"artifact_manifest_sha256", *ARTIFACT_PATH_FIELDS}
+INITIALIZR_SOURCE_FIELD = "initializr_metadata_sha256"
 RESULT_FIELDS = {
     "case_id", "run_id", "condition", "host", "host_version", "model", "skill_commit",
     "trace_id", "output_sha256", "grader_kind", "must_results", "must_not_results", "notes",
-    "workspace_diff_sha256", "changed_paths", *ARTIFACT_FIELDS,
+    "workspace_diff_sha256", "changed_paths", INITIALIZR_SOURCE_FIELD, *ARTIFACT_FIELDS,
 }
 GRADES = {"pass", "fail", "unclear"}
 EMPTY_WORKSPACE_DIFF_SHA256 = hashlib.sha256(b"[]").hexdigest()
@@ -65,6 +68,14 @@ def load_cases(path: Path = DEFAULT_CASES) -> dict[str, dict[str, object]]:
         ):
             raise ValueError(
                 f"behavior case {item['id']} has an invalid fixture_tree_sha256"
+            )
+        source_artifact = item.get("with_skill_source_artifact")
+        if source_artifact is not None and (
+            item.get("artifact_mode") != "repository-fixture"
+            or source_artifact != "initializr-metadata"
+        ):
+            raise ValueError(
+                f"behavior case {item['id']} has an invalid with_skill_source_artifact"
             )
         cases[str(item["id"])] = item
     return cases
@@ -122,6 +133,14 @@ def load_results(path: Path) -> list[dict[str, object]]:
         ):
             raise ValueError(
                 f"behavior result line {line_number} has invalid artifact_manifest_sha256"
+            )
+        initializr_metadata_sha256 = item.get(INITIALIZR_SOURCE_FIELD)
+        if initializr_metadata_sha256 is not None and (
+            not isinstance(initializr_metadata_sha256, str)
+            or SHA256.fullmatch(initializr_metadata_sha256) is None
+        ):
+            raise ValueError(
+                f"behavior result line {line_number} has invalid {INITIALIZR_SOURCE_FIELD}"
             )
         for field in ("artifact_manifest_path", "artifact_workspace_path"):
             value = item.get(field)
@@ -301,6 +320,35 @@ def artifact_binding(
     return expected, manifest_path, workspace_path
 
 
+def initializr_source_binding(item: dict[str, object], artifact_root: Path) -> Path:
+    digest = item.get(INITIALIZR_SOURCE_FIELD)
+    if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
+        raise ValueError("Initializr source binding lacks a valid SHA-256")
+    skill_commit = str(item["skill_commit"])
+    relative = f"{skill_commit}/sources/initializr/{digest}.json"
+    source_path = resolve_bounded_path(
+        artifact_root,
+        relative,
+        expect_directory=False,
+        label="Initializr source path",
+    )
+    with source_path.open("rb") as source_file:
+        payload = source_file.read(MAX_INITIALIZR_SOURCE_BYTES + 1)
+    if len(payload) > MAX_INITIALIZR_SOURCE_BYTES:
+        raise ValueError(
+            f"Initializr source exceeds {MAX_INITIALIZR_SOURCE_BYTES} bytes"
+        )
+    if hashlib.sha256(payload).hexdigest() != digest:
+        raise ValueError("Initializr source SHA-256 does not match")
+    source_errors = metadata_errors(payload)
+    if source_errors:
+        raise ValueError(
+            "Initializr source does not match the metadata contract: "
+            + "; ".join(source_errors)
+        )
+    return source_path
+
+
 def require_canonical_cases(
     cases: dict[str, dict[str, object]], canonical: dict[str, dict[str, object]]
 ) -> None:
@@ -318,6 +366,7 @@ def score_results(
     artifact_root: Path | None = None,
     fixture_root: Path = ROOT,
     require_artifact_binding: bool = False,
+    require_initializr_source_binding: bool = False,
     expected_skill_commit: str | None = None,
 ) -> tuple[dict[str, object], list[str]]:
     if expected_with_skill_runs < 1 or expected_without_skill_runs < 0:
@@ -328,6 +377,10 @@ def score_results(
         raise ValueError("artifact binding requires artifact_root")
     if require_artifact_binding and expected_skill_commit is None:
         raise ValueError("artifact binding requires expected_skill_commit")
+    if require_initializr_source_binding and artifact_root is None:
+        raise ValueError("Initializr source binding requires artifact_root")
+    if require_initializr_source_binding and expected_skill_commit is None:
+        raise ValueError("Initializr source binding requires expected_skill_commit")
     errors: list[str] = []
     seen: set[tuple[str, str, str]] = set()
     trace_ids: set[str] = set()
@@ -341,6 +394,8 @@ def score_results(
     criterion_results: dict[tuple[str, int], list[str]] = {}
     artifact_identities: list[tuple[Path, Path]] = []
     verified_artifact_runs = 0
+    verified_initializr_source_runs = 0
+    verified_initializr_sources: set[Path] = set()
     for item in results:
         case_id = str(item["case_id"])
         condition = str(item["condition"])
@@ -375,6 +430,40 @@ def score_results(
         if case is None:
             errors.append(f"unknown behavior case: {case_id}")
             continue
+        source_artifact = case.get("with_skill_source_artifact")
+        source_digest = item.get(INITIALIZR_SOURCE_FIELD)
+        needs_initializr_source = (
+            condition == "with-skill" and source_artifact == "initializr-metadata"
+        )
+        if source_digest is not None and not needs_initializr_source:
+            errors.append(
+                f"behavior result contains unexpected Initializr source binding: "
+                f"{case_id}/{condition}/{run_id}"
+            )
+            continue
+        if require_initializr_source_binding and needs_initializr_source and source_digest is None:
+            errors.append(
+                f"behavior result lacks Initializr source binding: "
+                f"{case_id}/{condition}/{run_id}"
+            )
+            continue
+        if source_digest is not None:
+            if artifact_root is None:
+                errors.append(
+                    f"behavior result needs an artifact root for Initializr source binding: "
+                    f"{case_id}/{condition}/{run_id}"
+                )
+                continue
+            try:
+                source_path = initializr_source_binding(item, artifact_root)
+            except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
+                errors.append(
+                    f"invalid Initializr source binding: "
+                    f"{case_id}/{condition}/{run_id}: {error}"
+                )
+                continue
+            verified_initializr_source_runs += 1
+            verified_initializr_sources.add(source_path)
         workspace_diff_sha256 = item.get("workspace_diff_sha256")
         changed_paths = item.get("changed_paths")
         artifact_manifest_sha256 = item.get("artifact_manifest_sha256")
@@ -551,6 +640,11 @@ def score_results(
             "verified_runs": verified_artifact_runs,
             "expected_skill_commit": expected_skill_commit,
         },
+        "initializr_source_binding": {
+            "required": require_initializr_source_binding,
+            "verified_runs": verified_initializr_source_runs,
+            "unique_sources": len(verified_initializr_sources),
+        },
         "summary": {
             "must_total": must_total,
             "must_pass": must_pass,
@@ -619,9 +713,15 @@ def main() -> int:
     parser.add_argument("--with-skill-runs", type=int, default=3)
     parser.add_argument("--without-skill-runs", type=int, default=1)
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument(
+        "--fail-on-observed-failure",
+        action="store_true",
+        help="Return 1 when an evaluated with-skill result contains a non-passing grade.",
+    )
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--artifact-root", type=Path)
     parser.add_argument("--require-artifact-binding", action="store_true")
+    parser.add_argument("--require-initializr-source-binding", action="store_true")
     parser.add_argument("--expected-skill-commit")
     parser.add_argument("--json-report", type=Path)
     args = parser.parse_args()
@@ -633,6 +733,10 @@ def main() -> int:
         parser.error("--require-artifact-binding requires --artifact-root")
     if args.require_artifact_binding and args.expected_skill_commit is None:
         parser.error("--require-artifact-binding requires --expected-skill-commit")
+    if args.require_initializr_source_binding and args.artifact_root is None:
+        parser.error("--require-initializr-source-binding requires --artifact-root")
+    if args.require_initializr_source_binding and args.expected_skill_commit is None:
+        parser.error("--require-initializr-source-binding requires --expected-skill-commit")
     if args.expected_skill_commit is not None and (
         COMMIT.fullmatch(args.expected_skill_commit) is None
     ):
@@ -649,6 +753,7 @@ def main() -> int:
             require_complete=not args.allow_partial,
             artifact_root=args.artifact_root,
             require_artifact_binding=args.require_artifact_binding,
+            require_initializr_source_binding=args.require_initializr_source_binding,
             expected_skill_commit=args.expected_skill_commit,
         )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
@@ -671,6 +776,17 @@ def main() -> int:
     if args.strict and gate_failures:
         for failure in gate_failures:
             print(f"RELEASE GATE: {failure}", file=sys.stderr)
+        return 1
+    failures = report["failures"]
+    assert isinstance(failures, list)
+    observed_failures = [failure for failure in failures if failure["condition"] == "with-skill"]
+    if args.fail_on_observed_failure and observed_failures:
+        for failure in observed_failures:
+            print(
+                "OBSERVED FAILURE: "
+                f"{failure['case_id']}/{failure['condition']}/{failure['run_id']}",
+                file=sys.stderr,
+            )
         return 1
     return 0
 
