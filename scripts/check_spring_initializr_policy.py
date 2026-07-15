@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from check_links import PinnedHTTPSConnection, resolved_addresses
+from skill_utils import is_link_or_junction
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -222,15 +223,41 @@ def save_evaluation_source(payload: bytes, artifact_root: Path, skill_commit: st
     if COMMIT.fullmatch(skill_commit) is None:
         raise ValueError("skill_commit must be a lowercase 40-character commit")
     digest = hashlib.sha256(payload).hexdigest()
-    destination = (
-        artifact_root / skill_commit / "sources" / "initializr" / f"{digest}.json"
-    )
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    if is_link_or_junction(artifact_root):
+        raise ValueError("Initializr evaluation artifact root is a link or junction")
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    if not artifact_root.is_dir() or is_link_or_junction(artifact_root):
+        raise ValueError("Initializr evaluation artifact root is not a safe directory")
+    resolved_root = artifact_root.resolve(strict=True)
+    source_directory = artifact_root
+    for part in (skill_commit, "sources", "initializr"):
+        source_directory /= part
+        if is_link_or_junction(source_directory):
+            raise ValueError("Initializr evaluation source parent is a link or junction")
+        source_directory.mkdir(exist_ok=True)
+        if not source_directory.is_dir() or is_link_or_junction(source_directory):
+            raise ValueError("Initializr evaluation source parent is not a safe directory")
+        try:
+            source_directory.resolve(strict=True).relative_to(resolved_root)
+        except ValueError as error:
+            raise ValueError("Initializr evaluation source path escapes the artifact root") from error
+    destination = source_directory / f"{digest}.json"
+    if is_link_or_junction(destination):
+        raise ValueError("Initializr evaluation source destination is a link or junction")
     if destination.exists():
         if not destination.is_file() or destination.read_bytes() != payload:
             raise ValueError("Initializr evaluation source path contains different bytes")
         return destination
-    destination.write_bytes(payload)
+    try:
+        with destination.open("xb") as source_file:
+            source_file.write(payload)
+    except FileExistsError:
+        if (
+            is_link_or_junction(destination)
+            or not destination.is_file()
+            or destination.read_bytes() != payload
+        ):
+            raise ValueError("Initializr evaluation source path contains different bytes") from None
     return destination
 
 

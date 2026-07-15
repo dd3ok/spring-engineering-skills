@@ -111,6 +111,7 @@ python scripts/validate_all.py
 
 ```text
 python scripts/check_spring_cloud_policy.py --online
+python scripts/check_spring_initializr_policy.py --online
 python scripts/check_spring_project_lifecycle.py --online
 python scripts/check_links.py --online --json-report dist/link-report.json
 ```
